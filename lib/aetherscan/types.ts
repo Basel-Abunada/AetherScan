@@ -1,4 +1,4 @@
-﻿export type UserRole = "admin" | "engineer" | "technician"
+export type UserRole = "admin" | "engineer" | "technician"
 export type UserStatus = "active" | "inactive"
 export type AgentStatus = "online" | "offline" | "degraded"
 export type ScheduleStatus = "active" | "paused" | "disabled"
@@ -8,7 +8,7 @@ export type FindingStatus = "open" | "in-progress" | "resolved"
 export type ReportFormat = "pdf" | "csv"
 export type ReportType = "scan" | "vulnerability" | "asset" | "executive"
 export type ScanType = "quick" | "standard" | "full" | "vuln"
-export type ScanMode = "demo" | "live"
+export type ScanMode = "live"
 
 export interface User {
   id: string
@@ -131,7 +131,7 @@ export interface ReportRecord {
   downloadPath: string
 }
 
-export interface DemoDatabase {
+export interface AetherScanDatabase {
   users: User[]
   sessions: Session[]
   agents: Agent[]

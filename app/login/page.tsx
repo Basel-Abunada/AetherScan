@@ -42,7 +42,7 @@ export default function LoginPage() {
         </div>
 
         <Card>
-          <CardHeader className="text-center"><CardTitle>Sign In</CardTitle><CardDescription>Use one of the local system accounts to access the platform</CardDescription></CardHeader>
+          <CardHeader className="text-center"><CardTitle>Sign In</CardTitle><CardDescription>Use one of the system accounts to access the platform</CardDescription></CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2"><Label htmlFor="email">Email</Label><Input id="email" type="email" required autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} /></div>
@@ -50,7 +50,7 @@ export default function LoginPage() {
               {error ? <p className="text-sm text-red-600">{error}</p> : null}
               <Button type="submit" className="w-full" disabled={isLoading}>{isLoading ? "Signing in..." : "Sign In"}</Button>
             </form>
-            <div className="mt-6 rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground"><p className="font-medium text-foreground mb-2">Local test accounts</p><p>`admin@aetherscan.local` / `Admin123!`</p><p>`engineer@aetherscan.local` / `Engineer123!`</p><p>`tech@aetherscan.local` / `Tech123!`</p></div>
+            <div className="mt-6 rounded-lg border bg-muted/40 p-4 text-sm text-muted-foreground"><p className="font-medium text-foreground mb-2">System accounts</p><p>`admin@aetherscan.local` / `Admin123!`</p><p>`engineer@aetherscan.local` / `Engineer123!`</p><p>`tech@aetherscan.local` / `Tech123!`</p></div>
           </CardContent>
         </Card>
       </div>

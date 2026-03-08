@@ -1,11 +1,6 @@
-﻿import { spawn } from "node:child_process"
-import type { Asset, AssetService, ScanMode, ScanType } from "@/lib/aetherscan/types"
-import { demoProfiles } from "@/lib/aetherscan/demo-profiles"
+import { spawn } from "node:child_process"
+import type { Asset, AssetService, ScanType } from "@/lib/aetherscan/types"
 import { makeId, nowIso } from "@/lib/aetherscan/utils"
-
-function delay(ms: number) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
 
 function assetWithTimestamps(asset: Omit<Asset, "id" | "discoveredAt" | "lastSeenAt">): Asset {
   const timestamp = nowIso()
@@ -15,12 +10,6 @@ function assetWithTimestamps(asset: Omit<Asset, "id" | "discoveredAt" | "lastSee
     discoveredAt: timestamp,
     lastSeenAt: timestamp,
   }
-}
-
-async function runDemoProfile(target: string) {
-  await delay(350)
-  const profile = demoProfiles[target] ?? demoProfiles["demo-hq"]
-  return profile.map(assetWithTimestamps)
 }
 
 function parseServices(portSegment: string): AssetService[] {
@@ -41,13 +30,19 @@ function parseServices(portSegment: string): AssetService[] {
     .filter((service) => Number.isFinite(service.port) && service.state === "open")
 }
 
-async function runLiveNmap(target: string, scanType: ScanType): Promise<Asset[]> {
+export async function executeScan({
+  target,
+  scanType,
+}: {
+  target: string
+  scanType: ScanType
+}) {
   const args = ["-oG", "-", "-sV", target]
   if (scanType === "quick") args.unshift("--top-ports", "100")
   if (scanType === "full") args.unshift("-p-")
   if (scanType === "vuln") args.unshift("--script", "vuln")
 
-  return new Promise((resolve, reject) => {
+  return new Promise<Asset[]>((resolve, reject) => {
     const child = spawn("nmap", args, { windowsHide: true })
     let stdout = ""
     let stderr = ""
@@ -88,24 +83,4 @@ async function runLiveNmap(target: string, scanType: ScanType): Promise<Asset[]>
       resolve(assets)
     })
   })
-}
-
-export async function executeScan({
-  target,
-  mode,
-  scanType,
-}: {
-  target: string
-  mode: ScanMode
-  scanType: ScanType
-}) {
-  if (mode === "demo") {
-    return runDemoProfile(target)
-  }
-
-  try {
-    return await runLiveNmap(target, scanType)
-  } catch {
-    return runDemoProfile("demo-hq")
-  }
 }

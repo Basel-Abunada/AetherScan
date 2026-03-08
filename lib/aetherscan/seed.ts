@@ -1,7 +1,7 @@
-﻿import type { DemoDatabase } from "@/lib/aetherscan/types"
+import type { AetherScanDatabase } from "@/lib/aetherscan/types"
 import { hashPassword, nowIso } from "@/lib/aetherscan/utils"
 
-export function createSeedDatabase(): DemoDatabase {
+export function createSeedDatabase(): AetherScanDatabase {
   const createdAt = nowIso()
   return {
     users: [

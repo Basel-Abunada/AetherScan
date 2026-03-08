@@ -1,8 +1,8 @@
-﻿import type { Asset, DemoDatabase, ScanMode, ScanResult, ScanType } from "@/lib/aetherscan/types"
+import type { Asset, AetherScanDatabase, ScanMode, ScanResult, ScanType } from "@/lib/aetherscan/types"
 import { buildFindingsForAssets, summarizeFindings } from "@/lib/aetherscan/risk-engine"
 import { makeId, nowIso } from "@/lib/aetherscan/utils"
 
-export function createQueuedScan(database: DemoDatabase, input: {
+export function createQueuedScan(database: AetherScanDatabase, input: {
   agentId: string
   agentName: string
   target: string
@@ -28,7 +28,7 @@ export function createQueuedScan(database: DemoDatabase, input: {
   return scan
 }
 
-export function markScanRunning(database: DemoDatabase, scanId: string) {
+export function markScanRunning(database: AetherScanDatabase, scanId: string) {
   const scan = database.scans.find((entry) => entry.id === scanId)
   if (!scan) return null
   scan.status = "running"
@@ -37,7 +37,7 @@ export function markScanRunning(database: DemoDatabase, scanId: string) {
   return scan
 }
 
-export function finalizeScan(database: DemoDatabase, input: { scanId: string; assets: Asset[]; durationSeconds: number; summary?: string }) {
+export function finalizeScan(database: AetherScanDatabase, input: { scanId: string; assets: Asset[]; durationSeconds: number; summary?: string }) {
   const scan = database.scans.find((entry) => entry.id === input.scanId)
   if (!scan) return null
 
@@ -71,7 +71,7 @@ export function finalizeScan(database: DemoDatabase, input: { scanId: string; as
   return { scan, findings, vulnerabilities }
 }
 
-export function failScan(database: DemoDatabase, scanId: string, message: string) {
+export function failScan(database: AetherScanDatabase, scanId: string, message: string) {
   const scan = database.scans.find((entry) => entry.id === scanId)
   if (!scan) return null
   scan.status = "failed"

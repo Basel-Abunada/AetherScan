@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { requireUserRole } from "@/lib/aetherscan/auth"
 import { updateDatabase } from "@/lib/aetherscan/store"
 import { makeId, nowIso } from "@/lib/aetherscan/utils"
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     description: String(body.description ?? ""),
     status: "offline" as const,
     lastSeenAt: nowIso(),
-    mode: body.mode === "live" ? "live" : "demo",
+    mode: "live",
     authToken: makeId("agenttoken"),
     targetHint: body.targetHint ? String(body.targetHint) : undefined,
   }
@@ -28,3 +28,4 @@ export async function POST(request: Request) {
 
   return NextResponse.json(agent, { status: 201 })
 }
+
