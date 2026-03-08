@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { requireUserRole } from "@/lib/aetherscan/auth"
 import { readDatabase, updateDatabase } from "@/lib/aetherscan/store"
 import { hashPassword, makeId, nowIso } from "@/lib/aetherscan/utils"
@@ -15,14 +15,23 @@ export async function POST(request: Request) {
   if (!auth.user) return auth.response
 
   const body = await request.json()
+  const password = String(body.password ?? "")
+  if (password.length < 8) {
+    return NextResponse.json({ error: "Password must be at least 8 characters" }, { status: 400 })
+  }
+
   const user = {
     id: makeId("user"),
     name: String(body.name ?? "New User"),
     email: String(body.email ?? "").toLowerCase(),
-    passwordHash: hashPassword(String(body.password ?? "ChangeMe123!")),
+    passwordHash: hashPassword(password),
     role: body.role === "admin" || body.role === "engineer" ? body.role : "technician",
     status: "active" as const,
     createdAt: nowIso(),
+    department: String(body.department ?? ""),
+    theme: "system" as const,
+    language: "en" as const,
+    timezone: "Asia/Kuala_Lumpur",
   }
 
   await updateDatabase((database) => {

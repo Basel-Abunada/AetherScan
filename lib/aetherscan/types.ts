@@ -9,6 +9,7 @@ export type ReportFormat = "pdf" | "csv"
 export type ReportType = "scan" | "vulnerability" | "asset" | "executive"
 export type ScanType = "quick" | "standard" | "full" | "vuln"
 export type ScanMode = "live"
+export type DeviceType = "server" | "workstation" | "laptop" | "printer" | "router" | "mobile" | "switch" | "iot" | "unknown"
 
 export interface User {
   id: string
@@ -19,6 +20,10 @@ export interface User {
   status: UserStatus
   createdAt: string
   lastLoginAt?: string
+  department?: string
+  theme?: "light" | "dark" | "system"
+  language?: "en" | "ar"
+  timezone?: string
 }
 
 export interface Session {
@@ -27,6 +32,9 @@ export interface Session {
   userId: string
   createdAt: string
   expiresAt: string
+  lastSeenAt?: string
+  userAgent?: string
+  ipAddress?: string
 }
 
 export interface Agent {
@@ -71,6 +79,7 @@ export interface Asset {
   ipAddress: string
   hostname: string
   os?: string
+  deviceType?: DeviceType
   status: "up" | "down"
   discoveredAt: string
   lastSeenAt: string
@@ -131,6 +140,37 @@ export interface ReportRecord {
   downloadPath: string
 }
 
+export interface NotificationSettings {
+  emailEnabled: boolean
+  highRiskAlerts: boolean
+  scanCompletion: boolean
+  agentOffline: boolean
+  weeklySummary: boolean
+  alertEmail: string
+  ccEmail: string
+}
+
+export interface EmailTransportSettings {
+  host: string
+  port: number
+  secure: boolean
+  username: string
+  password: string
+  from: string
+}
+
+export interface SystemSettings {
+  defaultScanType: ScanType
+  autoGenerateReports: boolean
+  dataRetentionDays: number
+}
+
+export interface AetherScanSettings {
+  notifications: NotificationSettings
+  email: EmailTransportSettings
+  system: SystemSettings
+}
+
 export interface AetherScanDatabase {
   users: User[]
   sessions: Session[]
@@ -141,4 +181,5 @@ export interface AetherScanDatabase {
   alerts: Alert[]
   scans: ScanResult[]
   reports: ReportRecord[]
+  settings: AetherScanSettings
 }

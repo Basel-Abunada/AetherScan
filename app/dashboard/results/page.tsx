@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,22 +8,32 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FileText, MoreHorizontal, Search, Download, Filter, CheckCircle, XCircle, Clock } from "lucide-react"
+import { FileText, MoreHorizontal, Search, Download, Filter, CheckCircle, XCircle, Clock, Trash2 } from "lucide-react"
 import type { ScanResult } from "@/lib/aetherscan/types"
-import { downloadReport, fetchScans, formatDateTime, scanTypeLabel } from "@/lib/aetherscan-client"
+import { deleteScanResult, downloadReport, fetchScans, formatDateTime, loadSession, scanTypeLabel } from "@/lib/aetherscan-client"
 
 export default function ScanResultsPage() {
   const [results, setResults] = useState<ScanResult[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [error, setError] = useState("")
+  const role = loadSession()?.user.role
+  const canDelete = role === "admin"
+
+  const loadResults = async () => {
+    try {
+      setResults(await fetchScans())
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load scans")
+    }
+  }
 
   useEffect(() => {
-    fetchScans().then(setResults).catch((err) => setError(err instanceof Error ? err.message : "Failed to load scans"))
+    void loadResults()
   }, [])
 
   const filteredResults = useMemo(() => results.filter((result) => {
-    const matchesSearch = result.agentName.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch = result.agentName.toLowerCase().includes(searchTerm.toLowerCase()) || result.target.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === "all" || result.status === statusFilter
     return matchesSearch && matchesStatus
   }), [results, searchTerm, statusFilter])
@@ -61,7 +71,7 @@ export default function ScanResultsPage() {
           <div className="flex flex-col gap-4 sm:flex-row">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search by agent name..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+              <Input placeholder="Search by agent name or target..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-[180px]">
@@ -89,6 +99,7 @@ export default function ScanResultsPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Agent</TableHead>
+                <TableHead>Target</TableHead>
                 <TableHead>Scan Time</TableHead>
                 <TableHead>Duration</TableHead>
                 <TableHead>Type</TableHead>
@@ -104,6 +115,7 @@ export default function ScanResultsPage() {
               {filteredResults.map((result) => (
                 <TableRow key={result.id}>
                   <TableCell className="font-medium">{result.agentName}</TableCell>
+                  <TableCell className="text-muted-foreground">{result.target}</TableCell>
                   <TableCell className="text-muted-foreground">{formatDateTime(result.completedAt ?? result.startedAt)}</TableCell>
                   <TableCell className="text-muted-foreground">{result.durationSeconds ? `${result.durationSeconds}s` : "N/A"}</TableCell>
                   <TableCell><Badge variant="outline">{scanTypeLabel(result.scanType)}</Badge></TableCell>
@@ -134,6 +146,12 @@ export default function ScanResultsPage() {
                           <Download className="mr-2 size-4" />
                           Export to CSV
                         </DropdownMenuItem>
+                        {canDelete ? (
+                          <DropdownMenuItem className="text-destructive" onClick={async () => { await deleteScanResult(result.id); await loadResults() }}>
+                            <Trash2 className="mr-2 size-4" />
+                            Delete Scan Result
+                          </DropdownMenuItem>
+                        ) : null}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>

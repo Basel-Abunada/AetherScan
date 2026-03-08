@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,9 +8,9 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Search, Filter, AlertTriangle, Shield, Info, CheckCircle, ExternalLink, Wrench } from "lucide-react"
+import { Search, Filter, AlertTriangle, Shield, Info, CheckCircle, ExternalLink, Wrench, Trash2 } from "lucide-react"
 import { RiskBadge } from "@/components/risk-badge"
-import { fetchVulnerabilities, formatDateTime, updateFinding } from "@/lib/aetherscan-client"
+import { deleteFinding, fetchVulnerabilities, formatDateTime, loadSession, updateFinding } from "@/lib/aetherscan-client"
 
 type FindingRow = Awaited<ReturnType<typeof fetchVulnerabilities>>["findings"][number]
 
@@ -22,6 +22,7 @@ export default function VulnerabilitiesPage() {
   const [counts, setCounts] = useState({ total: 0, high: 0, medium: 0, low: 0 })
   const [findings, setFindings] = useState<FindingRow[]>([])
   const [error, setError] = useState("")
+  const canDelete = loadSession()?.user.role === "admin"
 
   const loadData = async () => {
     try {
@@ -125,10 +126,18 @@ export default function VulnerabilitiesPage() {
                   <TableCell>{getStatusBadge(vuln.status)}</TableCell>
                   <TableCell className="text-muted-foreground text-sm">{formatDateTime(vuln.discoveredAt)}</TableCell>
                   <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => setSelectedVuln(vuln)}>
-                      <Wrench className="mr-2 size-4" />
-                      Remediate
-                    </Button>
+                    <div className="flex justify-end gap-2">
+                      <Button variant="outline" size="sm" onClick={() => setSelectedVuln(vuln)}>
+                        <Wrench className="mr-2 size-4" />
+                        Remediate
+                      </Button>
+                      {canDelete ? (
+                        <Button variant="destructive" size="sm" onClick={async () => { await deleteFinding(vuln.id); await loadData() }}>
+                          <Trash2 className="mr-2 size-4" />
+                          Delete
+                        </Button>
+                      ) : null}
+                    </div>
                   </TableCell>
                 </TableRow>
               ))}

@@ -1,8 +1,8 @@
-﻿import { createHmac, timingSafeEqual } from "node:crypto"
+import { createHmac, timingSafeEqual } from "node:crypto"
 import { NextResponse } from "next/server"
-import type { Agent, User, UserRole } from "@/lib/aetherscan/types"
+import type { Agent, Session, User, UserRole } from "@/lib/aetherscan/types"
 import { readDatabase } from "@/lib/aetherscan/store"
-import { hashPassword } from "@/lib/aetherscan/utils"
+import { hashPassword, nowIso } from "@/lib/aetherscan/utils"
 
 type JwtPayload = {
   sub: string
@@ -52,6 +52,11 @@ function verifyRawJwt(token: string): JwtPayload | null {
   return payload
 }
 
+export function extractBearerToken(request: Request) {
+  const authorization = request.headers.get("authorization")
+  return authorization?.startsWith("Bearer ") ? authorization.slice(7) : null
+}
+
 export async function authenticateUser(email: string, password: string) {
   const database = await readDatabase()
   const passwordHash = hashPassword(password)
@@ -77,13 +82,28 @@ export function issueJwtForUser(user: User, expiresInHours = 12) {
   })
 }
 
-export async function getUserFromRequest(request: Request): Promise<User | null> {
-  const authorization = request.headers.get("authorization")
-  const token = authorization?.startsWith("Bearer ") ? authorization.slice(7) : null
+function sessionIsActive(session: Session) {
+  return new Date(session.expiresAt).getTime() > Date.now()
+}
+
+export async function getCurrentSession(request: Request): Promise<Session | null> {
+  const token = extractBearerToken(request)
   if (!token) return null
   const payload = verifyRawJwt(token)
   if (!payload) return null
   const database = await readDatabase()
+  return database.sessions.find((session) => session.token === token && session.userId === payload.sub && sessionIsActive(session)) ?? null
+}
+
+export async function getUserFromRequest(request: Request): Promise<User | null> {
+  const token = extractBearerToken(request)
+  if (!token) return null
+  const payload = verifyRawJwt(token)
+  if (!payload) return null
+  const database = await readDatabase()
+  const session = database.sessions.find((entry) => entry.token === token && entry.userId === payload.sub && sessionIsActive(entry))
+  if (!session) return null
+  session.lastSeenAt = nowIso()
   return database.users.find((user) => user.id === payload.sub && user.status === "active") ?? null
 }
 

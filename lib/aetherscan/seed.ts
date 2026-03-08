@@ -1,5 +1,32 @@
-import type { AetherScanDatabase } from "@/lib/aetherscan/types"
+import type { AetherScanDatabase, AetherScanSettings } from "@/lib/aetherscan/types"
 import { hashPassword, nowIso } from "@/lib/aetherscan/utils"
+
+export function createDefaultSettings(): AetherScanSettings {
+  return {
+    notifications: {
+      emailEnabled: false,
+      highRiskAlerts: true,
+      scanCompletion: true,
+      agentOffline: true,
+      weeklySummary: false,
+      alertEmail: "",
+      ccEmail: "",
+    },
+    email: {
+      host: "",
+      port: 587,
+      secure: false,
+      username: "",
+      password: "",
+      from: "",
+    },
+    system: {
+      defaultScanType: "standard",
+      autoGenerateReports: true,
+      dataRetentionDays: 90,
+    },
+  }
+}
 
 export function createSeedDatabase(): AetherScanDatabase {
   const createdAt = nowIso()
@@ -14,6 +41,10 @@ export function createSeedDatabase(): AetherScanDatabase {
         status: "active",
         createdAt,
         lastLoginAt: createdAt,
+        department: "Cybersecurity",
+        theme: "system",
+        language: "en",
+        timezone: "Asia/Kuala_Lumpur",
       },
       {
         id: "user_engineer",
@@ -23,6 +54,10 @@ export function createSeedDatabase(): AetherScanDatabase {
         role: "engineer",
         status: "active",
         createdAt,
+        department: "Network Operations",
+        theme: "system",
+        language: "en",
+        timezone: "Asia/Kuala_Lumpur",
       },
       {
         id: "user_tech",
@@ -32,6 +67,10 @@ export function createSeedDatabase(): AetherScanDatabase {
         role: "technician",
         status: "active",
         createdAt,
+        department: "Security Operations",
+        theme: "system",
+        language: "en",
+        timezone: "Asia/Kuala_Lumpur",
       },
     ],
     sessions: [],
@@ -42,5 +81,6 @@ export function createSeedDatabase(): AetherScanDatabase {
     alerts: [],
     scans: [],
     reports: [],
+    settings: createDefaultSettings(),
   }
 }

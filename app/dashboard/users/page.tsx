@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,7 +29,7 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState("all")
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [error, setError] = useState("")
-  const [form, setForm] = useState({ name: "", email: "", role: "technician", password: "ChangeMe123!" })
+  const [form, setForm] = useState({ name: "", email: "", role: "technician", password: "", department: "" })
 
   const loadUsers = async () => {
     try {
@@ -65,6 +65,7 @@ export default function UsersPage() {
             <div className="grid gap-4 py-4">
               <div className="space-y-2"><Label htmlFor="name">Full Name</Label><Input id="name" value={form.name} onChange={(event) => setForm((current) => ({ ...current, name: event.target.value }))} /></div>
               <div className="space-y-2"><Label htmlFor="email">Email Address</Label><Input id="email" type="email" value={form.email} onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))} /></div>
+              <div className="space-y-2"><Label htmlFor="department">Department</Label><Input id="department" value={form.department} onChange={(event) => setForm((current) => ({ ...current, department: event.target.value }))} /></div>
               <div className="space-y-2">
                 <Label htmlFor="role">Role</Label>
                 <Select value={form.role} onValueChange={(value) => setForm((current) => ({ ...current, role: value }))}>
@@ -76,14 +77,14 @@ export default function UsersPage() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2"><Label htmlFor="password">Temporary Password</Label><Input id="password" type="password" value={form.password} onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} /></div>
+              <div className="space-y-2"><Label htmlFor="password">Temporary Password</Label><Input id="password" type="password" value={form.password} placeholder="Set initial password" onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))} /></div>
             </div>
             <DialogFooter>
               <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-              <Button onClick={async () => {
+              <Button disabled={!form.password} onClick={async () => {
                 await createUser(form)
                 setIsDialogOpen(false)
-                setForm({ name: "", email: "", role: "technician", password: "ChangeMe123!" })
+                setForm({ name: "", email: "", role: "technician", password: "", department: "" })
                 await loadUsers()
               }}>Create User</Button>
             </DialogFooter>
@@ -113,7 +114,7 @@ export default function UsersPage() {
         <CardHeader><CardTitle>Users</CardTitle><CardDescription>{filteredUsers.length} user{filteredUsers.length !== 1 && "s"} found</CardDescription></CardHeader>
         <CardContent>
           <Table>
-            <TableHeader><TableRow><TableHead>User</TableHead><TableHead>Role</TableHead><TableHead>Status</TableHead><TableHead>Last Login</TableHead><TableHead>Created</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>User</TableHead><TableHead>Role</TableHead><TableHead>Status</TableHead><TableHead>Department</TableHead><TableHead>Last Login</TableHead><TableHead>Created</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>
             <TableBody>
               {filteredUsers.map((user) => {
                 const config = roleConfig[user.role as UserRole]
@@ -123,6 +124,7 @@ export default function UsersPage() {
                     <TableCell><div className="flex items-center gap-3"><Avatar><AvatarFallback className="bg-primary/10 text-primary text-sm">{getInitials(user.name)}</AvatarFallback></Avatar><div><p className="font-medium">{user.name}</p><p className="text-sm text-muted-foreground">{user.email}</p></div></div></TableCell>
                     <TableCell><Badge variant="outline" className={config.color}><RoleIcon className="mr-1 size-3" />{config.label}</Badge></TableCell>
                     <TableCell><Badge variant="outline" className={user.status === "active" ? "bg-green-50 text-green-700 border-green-200" : "bg-gray-50 text-gray-700 border-gray-200"}>{user.status}</Badge></TableCell>
+                    <TableCell className="text-muted-foreground">{user.department || "N/A"}</TableCell>
                     <TableCell className="text-muted-foreground">{formatDateTime(user.lastLoginAt)}</TableCell>
                     <TableCell className="text-muted-foreground">{formatDateTime(user.createdAt)}</TableCell>
                     <TableCell className="text-right">

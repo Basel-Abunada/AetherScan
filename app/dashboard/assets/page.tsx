@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,12 +8,11 @@ import { Input } from "@/components/ui/input"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Search, Filter, Monitor, Laptop, Server, Printer, Smartphone, Router, Eye } from "lucide-react"
+import { Search, Filter, Monitor, Laptop, Server, Printer, Smartphone, Router, Eye, Cpu, Workflow } from "lucide-react"
 import { RiskBadge } from "@/components/risk-badge"
-import type { Asset } from "@/lib/aetherscan/types"
+import type { Asset, DeviceType } from "@/lib/aetherscan/types"
 import { fetchAssets, fetchVulnerabilities, formatDateTime } from "@/lib/aetherscan-client"
 
-type DeviceType = "server" | "workstation" | "laptop" | "printer" | "router" | "mobile" | "unknown"
 type AssetView = Asset & { deviceType: DeviceType; vulnerabilities: { high: number; medium: number; low: number } }
 
 const deviceIcons: Record<DeviceType, React.ComponentType<{ className?: string }>> = {
@@ -23,15 +22,20 @@ const deviceIcons: Record<DeviceType, React.ComponentType<{ className?: string }
   printer: Printer,
   router: Router,
   mobile: Smartphone,
+  switch: Workflow,
+  iot: Cpu,
   unknown: Monitor,
 }
 
 function inferDeviceType(asset: Asset): DeviceType {
-  const fingerprint = `${asset.hostname} ${asset.os ?? ""}`.toLowerCase()
+  if (asset.deviceType) return asset.deviceType
+  const fingerprint = `${asset.hostname} ${asset.os ?? ""} ${asset.services.map((service) => `${service.name} ${service.product ?? ""}`).join(" ")}`.toLowerCase()
   if (fingerprint.includes("router") || fingerprint.includes("gateway")) return "router"
   if (fingerprint.includes("printer")) return "printer"
-  if (fingerprint.includes("server")) return "server"
-  if (fingerprint.includes("ubuntu") || fingerprint.includes("debian") || fingerprint.includes("centos")) return "server"
+  if (fingerprint.includes("switch")) return "switch"
+  if (fingerprint.includes("android") || fingerprint.includes("iphone")) return "mobile"
+  if (fingerprint.includes("camera") || fingerprint.includes("iot")) return "iot"
+  if (fingerprint.includes("server") || fingerprint.includes("linux") || fingerprint.includes("vmware") || fingerprint.includes("windows server")) return "server"
   if (fingerprint.includes("macbook") || fingerprint.includes("laptop")) return "laptop"
   if (fingerprint.includes("windows")) return "workstation"
   return "unknown"
@@ -69,7 +73,7 @@ export default function AssetsPage() {
       <div className="grid gap-4 sm:grid-cols-4">
         <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Assets</CardTitle><Monitor className="size-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{assets.length}</div><p className="text-xs text-muted-foreground">Discovered devices</p></CardContent></Card>
         <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Servers</CardTitle><Server className="size-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{assets.filter((a) => a.deviceType === "server").length}</div><p className="text-xs text-muted-foreground">Server devices</p></CardContent></Card>
-        <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Workstations</CardTitle><Laptop className="size-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{assets.filter((a) => ["workstation", "laptop"].includes(a.deviceType)).length}</div><p className="text-xs text-muted-foreground">User devices</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">User Devices</CardTitle><Laptop className="size-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{assets.filter((a) => ["workstation", "laptop", "mobile"].includes(a.deviceType)).length}</div><p className="text-xs text-muted-foreground">Endpoints</p></CardContent></Card>
         <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Vulnerabilities</CardTitle><Monitor className="size-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{totalVulnerabilities}</div><p className="text-xs text-muted-foreground">Across all assets</p></CardContent></Card>
       </div>
 
@@ -77,7 +81,7 @@ export default function AssetsPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4 sm:flex-row">
             <div className="relative flex-1"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" /><Input placeholder="Search by hostname, IP, or OS..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" /></div>
-            <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-full sm:w-[180px]"><Filter className="mr-2 size-4" /><SelectValue placeholder="Device Type" /></SelectTrigger><SelectContent><SelectItem value="all">All Types</SelectItem><SelectItem value="server">Servers</SelectItem><SelectItem value="workstation">Workstations</SelectItem><SelectItem value="laptop">Laptops</SelectItem><SelectItem value="router">Routers</SelectItem><SelectItem value="printer">Printers</SelectItem></SelectContent></Select>
+            <Select value={typeFilter} onValueChange={setTypeFilter}><SelectTrigger className="w-full sm:w-[180px]"><Filter className="mr-2 size-4" /><SelectValue placeholder="Device Type" /></SelectTrigger><SelectContent><SelectItem value="all">All Types</SelectItem><SelectItem value="server">Servers</SelectItem><SelectItem value="workstation">Workstations</SelectItem><SelectItem value="laptop">Laptops</SelectItem><SelectItem value="router">Routers</SelectItem><SelectItem value="printer">Printers</SelectItem><SelectItem value="mobile">Mobile</SelectItem><SelectItem value="switch">Switches</SelectItem><SelectItem value="iot">IoT</SelectItem></SelectContent></Select>
           </div>
         </CardContent>
       </Card>
@@ -96,7 +100,7 @@ export default function AssetsPage() {
                   <TableRow key={asset.id}>
                     <TableCell><div className="flex items-center gap-3"><div className="rounded-md bg-muted p-2"><DeviceIcon className="size-4" /></div><div><p className="font-medium">{asset.hostname}</p><p className="text-xs text-muted-foreground capitalize">{asset.deviceType}</p></div></div></TableCell>
                     <TableCell><code className="bg-muted px-2 py-0.5 rounded text-xs">{asset.ipAddress}</code></TableCell>
-                    <TableCell className="max-w-[200px] truncate">{asset.os ?? "Unknown"}</TableCell>
+                    <TableCell className="max-w-[260px] truncate">{asset.os ?? "Unknown"}</TableCell>
                     <TableCell className="text-center"><Badge variant="secondary">{asset.services.length}</Badge></TableCell>
                     <TableCell className="text-center">{totalVulns > 0 ? <div className="flex items-center justify-center gap-1"><RiskBadge level={riskLevel} /><span className="text-sm">({totalVulns})</span></div> : <span className="text-sm text-muted-foreground">None</span>}</TableCell>
                     <TableCell className="text-muted-foreground text-sm">{formatDateTime(asset.lastSeenAt)}</TableCell>
@@ -110,7 +114,7 @@ export default function AssetsPage() {
       </Card>
 
       <Dialog open={!!selectedAsset} onOpenChange={() => setSelectedAsset(null)}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[640px]">
           <DialogHeader><DialogTitle>Asset Details</DialogTitle><DialogDescription>Complete information about the selected asset</DialogDescription></DialogHeader>
           {selectedAsset ? (
             <div className="space-y-4">
@@ -121,7 +125,7 @@ export default function AssetsPage() {
                 <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground mb-1">Status</p><p className="font-medium">{selectedAsset.status}</p></div>
                 <div className="rounded-lg border p-3 col-span-2"><p className="text-xs text-muted-foreground mb-1">Operating System</p><p className="font-medium">{selectedAsset.os ?? "Unknown"}</p></div>
               </div>
-              <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground mb-2">Open Ports & Services</p><div className="flex flex-wrap gap-2">{selectedAsset.services.map((service) => <Badge key={`${selectedAsset.id}-${service.port}`} variant="outline">{service.port} ({service.name})</Badge>)}</div></div>
+              <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground mb-2">Open Ports & Services</p><div className="flex flex-wrap gap-2">{selectedAsset.services.map((service) => <Badge key={`${selectedAsset.id}-${service.port}`} variant="outline">{service.port}/{service.protocol} {service.name}{service.product ? ` - ${service.product}` : ""}{service.version ? ` ${service.version}` : ""}</Badge>)}</div></div>
               <div className="rounded-lg border p-3"><p className="text-xs text-muted-foreground mb-2">Vulnerabilities</p><div className="flex gap-4"><div className="text-center"><span className="inline-flex items-center justify-center size-8 rounded-full bg-red-100 text-red-700 font-medium">{selectedAsset.vulnerabilities.high}</span><p className="text-xs text-muted-foreground mt-1">High</p></div><div className="text-center"><span className="inline-flex items-center justify-center size-8 rounded-full bg-amber-100 text-amber-700 font-medium">{selectedAsset.vulnerabilities.medium}</span><p className="text-xs text-muted-foreground mt-1">Medium</p></div><div className="text-center"><span className="inline-flex items-center justify-center size-8 rounded-full bg-green-100 text-green-700 font-medium">{selectedAsset.vulnerabilities.low}</span><p className="text-xs text-muted-foreground mt-1">Low</p></div></div></div>
             </div>
           ) : null}

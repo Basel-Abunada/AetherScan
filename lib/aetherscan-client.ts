@@ -1,4 +1,4 @@
-﻿import type { Agent, Asset, ReportRecord, RiskFinding, ScanResult, ScanSchedule, User } from "@/lib/aetherscan/types"
+import type { Agent, Asset, ReportRecord, RiskFinding, ScanResult, ScanSchedule, Session, User } from "@/lib/aetherscan/types"
 
 export type ClientSession = {
   token: string
@@ -25,7 +25,12 @@ export function loadSession(): ClientSession | null {
   if (typeof window === "undefined") return null
   const raw = window.localStorage.getItem(SESSION_KEY)
   if (!raw) return null
-  try { return JSON.parse(raw) as ClientSession } catch { window.localStorage.removeItem(SESSION_KEY); return null }
+  try {
+    return JSON.parse(raw) as ClientSession
+  } catch {
+    window.localStorage.removeItem(SESSION_KEY)
+    return null
+  }
 }
 
 export function saveSession(session: ClientSession) {
@@ -69,8 +74,8 @@ export function scanTypeLabel(scanType: string) {
 export async function login(email: string, password: string) { return apiRequest<ClientSession>("/api/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }) }
 export async function fetchDashboard() { return apiRequest<{ stats: { assets: number; vulnerabilities: number; highRisk: number; activeAgents: number; totalAgents: number }; riskDistribution: { high: number; medium: number; low: number }; recentScans: ScanResult[]; alerts: Array<{ id: string; severity: string; title: string; message: string; createdAt: string }>; agents: Agent[] }>("/api/dashboard") }
 export async function fetchUsers() { return apiRequest<Array<Omit<User, "passwordHash">>>("/api/users") }
-export async function createUser(payload: { name: string; email: string; role: string; password: string }) { return apiRequest<Omit<User, "passwordHash">>("/api/users", { method: "POST", body: JSON.stringify(payload) }) }
-export async function updateUser(id: string, payload: Partial<Pick<User, "name" | "email" | "role" | "status">>) { return apiRequest<Omit<User, "passwordHash">>(`/api/users/${id}`, { method: "PATCH", body: JSON.stringify(payload) }) }
+export async function createUser(payload: { name: string; email: string; role: string; password: string; department?: string }) { return apiRequest<Omit<User, "passwordHash">>("/api/users", { method: "POST", body: JSON.stringify(payload) }) }
+export async function updateUser(id: string, payload: Partial<Pick<User, "name" | "email" | "role" | "status" | "department">>) { return apiRequest<Omit<User, "passwordHash">>(`/api/users/${id}`, { method: "PATCH", body: JSON.stringify(payload) }) }
 export async function deleteUser(id: string) { return apiRequest<{ ok: boolean }>(`/api/users/${id}`, { method: "DELETE" }) }
 export async function fetchAgents() { return apiRequest<Agent[]>("/api/agents") }
 export async function registerAgent(payload: { name: string; hostname: string; ipAddress: string; platform: string; description?: string; mode?: string; targetHint?: string }) { return apiRequest<Agent & { authToken?: string }>("/api/agents/register", { method: "POST", body: JSON.stringify(payload) }) }
@@ -80,10 +85,18 @@ export async function updateSchedule(id: string, payload: Partial<Pick<ScanSched
 export async function deleteSchedule(id: string) { return apiRequest<{ ok: boolean }>(`/api/schedules/${id}`, { method: "DELETE" }) }
 export async function fetchScans() { return apiRequest<ScanResult[]>("/api/scans") }
 export async function runScan(payload: { agentId: string; target: string; scanType: string; mode: string }) { return apiRequest<{ queuedScan: ScanResult | null }>("/api/scans/run", { method: "POST", body: JSON.stringify(payload) }) }
+export async function deleteScanResult(id: string) { return apiRequest<{ ok: boolean }>(`/api/scans/${id}`, { method: "DELETE" }) }
 export async function fetchVulnerabilities(query?: { risk?: string; status?: string; q?: string }) { const params = new URLSearchParams(); if (query?.risk && query.risk !== "all") params.set("risk", query.risk); if (query?.status && query.status !== "all") params.set("status", query.status); if (query?.q) params.set("q", query.q); const suffix = params.toString() ? `?${params.toString()}` : ""; return apiRequest<{ counts: { total: number; high: number; medium: number; low: number }; findings: Array<RiskFinding & { affectedHost: string; hostname: string }> }>(`/api/vulnerabilities${suffix}`) }
 export async function updateFinding(id: string, status: string) { return apiRequest<RiskFinding>(`/api/vulnerabilities/${id}`, { method: "PATCH", body: JSON.stringify({ status }) }) }
+export async function deleteFinding(id: string) { return apiRequest<{ ok: boolean }>(`/api/vulnerabilities/${id}`, { method: "DELETE" }) }
 export async function fetchAssets() { return apiRequest<Asset[]>("/api/assets") }
 export async function fetchReports() { return apiRequest<ReportRecord[]>("/api/reports") }
+export async function fetchSettings() { return apiRequest<{ profile: { name: string; email: string; role: string; department: string; theme: string; language: string; timezone: string }; notifications: { emailEnabled: boolean; highRiskAlerts: boolean; scanCompletion: boolean; agentOffline: boolean; weeklySummary: boolean; alertEmail: string; ccEmail: string }; email: { host: string; port: number; secure: boolean; username: string; password: string; from: string }; system: { defaultScanType: string; autoGenerateReports: boolean; dataRetentionDays: number } }>("/api/settings") }
+export async function updateSettings(payload: Record<string, unknown>) { return apiRequest("/api/settings", { method: "PATCH", body: JSON.stringify(payload) }) }
+export async function sendTestEmail() { return apiRequest<{ ok: boolean }>("/api/settings/test-email", { method: "POST" }) }
+export async function fetchSessions() { return apiRequest<{ sessions: Array<Pick<Session, "id" | "createdAt" | "expiresAt" | "lastSeenAt" | "userAgent" | "ipAddress"> & { current: boolean }> }>("/api/auth/sessions") }
+export async function revokeSessions(scope: "current" | "others" | "all") { return apiRequest<{ ok: boolean }>("/api/auth/sessions", { method: "DELETE", body: JSON.stringify({ scope }) }) }
+export async function updatePassword(currentPassword: string, newPassword: string) { return apiRequest<{ ok: boolean }>("/api/auth/password", { method: "POST", body: JSON.stringify({ currentPassword, newPassword }) }) }
 
 export async function downloadReport(payload: { type: string; format: "pdf" | "csv"; generatedBy?: string }) {
   const session = loadSession()
