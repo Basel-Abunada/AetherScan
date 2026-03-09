@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { requireUser } from "@/lib/aetherscan/auth"
 import { readDatabase } from "@/lib/aetherscan/store"
 
@@ -15,7 +15,13 @@ export async function GET(request: Request) {
   const findings = database.findings
     .filter((finding) => (risk ? finding.riskLevel === risk : true))
     .filter((finding) => (status ? finding.status === status : true))
-    .filter((finding) => !q || finding.title.toLowerCase().includes(q) || finding.service.toLowerCase().includes(q) || finding.description.toLowerCase().includes(q))
+    .filter((finding) => !q
+      || finding.title.toLowerCase().includes(q)
+      || finding.service.toLowerCase().includes(q)
+      || finding.description.toLowerCase().includes(q)
+      || finding.cve?.toLowerCase().includes(q)
+      || finding.source.toLowerCase().includes(q)
+      || finding.recommendation.toLowerCase().includes(q))
     .map((finding) => {
       const asset = database.assets.find((entry) => entry.id === finding.assetId)
       return {

@@ -74,7 +74,7 @@ export default function VulnerabilitiesPage() {
           <div className="flex flex-col gap-4 sm:flex-row">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search vulnerabilities, hosts, or services..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
+              <Input placeholder="Search vulnerabilities, CVEs, hosts, or services..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="pl-10" />
             </div>
             <Select value={riskFilter} onValueChange={setRiskFilter}>
               <SelectTrigger className="w-full sm:w-[150px]"><Filter className="mr-2 size-4" /><SelectValue placeholder="Risk Level" /></SelectTrigger>
@@ -110,17 +110,30 @@ export default function VulnerabilitiesPage() {
               {findings.map((vuln) => (
                 <TableRow key={vuln.id}>
                   <TableCell>
-                    <div>
+                    <div className="space-y-1">
                       <p className="font-medium">{vuln.title}</p>
-                      {vuln.cve ? (
-                        <a href={`https://nvd.nist.gov/vuln/detail/${vuln.cve}`} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline flex items-center gap-1">
-                          {vuln.cve}
-                          <ExternalLink className="size-3" />
-                        </a>
-                      ) : null}
+                      <div className="flex flex-wrap items-center gap-2 text-xs">
+                        {vuln.cve ? (
+                          <a href={vuln.cveUrl ?? `https://nvd.nist.gov/vuln/detail/${vuln.cve}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
+                            {vuln.cve}
+                            <ExternalLink className="size-3" />
+                          </a>
+                        ) : <span className="text-muted-foreground">No mapped CVE</span>}
+                        {vuln.referenceUrl ? (
+                          <a href={vuln.referenceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline">
+                            Reference
+                            <ExternalLink className="size-3" />
+                          </a>
+                        ) : null}
+                      </div>
                     </div>
                   </TableCell>
-                  <TableCell><code className="bg-muted px-2 py-0.5 rounded text-xs">{vuln.affectedHost}</code></TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <code className="bg-muted px-2 py-0.5 rounded text-xs">{vuln.affectedHost}</code>
+                      <p className="text-xs text-muted-foreground">{vuln.hostname}</p>
+                    </div>
+                  </TableCell>
                   <TableCell>{vuln.port}/{vuln.service}</TableCell>
                   <TableCell><RiskBadge level={vuln.riskLevel} /></TableCell>
                   <TableCell>{getStatusBadge(vuln.status)}</TableCell>
@@ -147,23 +160,45 @@ export default function VulnerabilitiesPage() {
       </Card>
 
       <Dialog open={!!selectedVuln} onOpenChange={() => setSelectedVuln(null)}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[680px]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Wrench className="size-5" />Remediation Steps</DialogTitle>
-            <DialogDescription>Follow these steps to resolve the vulnerability</DialogDescription>
+            <DialogDescription>Follow these steps to investigate and resolve the vulnerability</DialogDescription>
           </DialogHeader>
           {selectedVuln ? (
             <div className="space-y-4">
               <div className="rounded-lg border p-4">
-                <div className="flex items-center justify-between mb-2"><h3 className="font-semibold">{selectedVuln.title}</h3><RiskBadge level={selectedVuln.riskLevel} /></div>
-                <p className="text-sm text-muted-foreground mb-2">{selectedVuln.description}</p>
-                <div className="flex gap-4 text-sm"><span><strong>Host:</strong> {selectedVuln.affectedHost}</span><span><strong>Port:</strong> {selectedVuln.port}</span><span><strong>Service:</strong> {selectedVuln.service}</span></div>
+                <div className="mb-3 flex flex-wrap items-center justify-between gap-3"><h3 className="font-semibold">{selectedVuln.title}</h3><RiskBadge level={selectedVuln.riskLevel} /></div>
+                <p className="mb-3 text-sm text-muted-foreground">{selectedVuln.description}</p>
+                <div className="grid gap-2 text-sm sm:grid-cols-2">
+                  <span><strong>Host:</strong> {selectedVuln.hostname} ({selectedVuln.affectedHost})</span>
+                  <span><strong>Port / Service:</strong> {selectedVuln.port} / {selectedVuln.service}</span>
+                  <span><strong>Status:</strong> {selectedVuln.status}</span>
+                  <span><strong>Discovered:</strong> {formatDateTime(selectedVuln.discoveredAt)}</span>
+                </div>
+                {selectedVuln.cve ? (
+                  <div className="mt-3 rounded-md border bg-muted/40 p-3 text-sm">
+                    <p className="font-medium">Mapped CVE</p>
+                    <a href={selectedVuln.cveUrl ?? `https://nvd.nist.gov/vuln/detail/${selectedVuln.cve}`} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-primary hover:underline">
+                      {selectedVuln.cve}
+                      <ExternalLink className="size-3" />
+                    </a>
+                  </div>
+                ) : null}
               </div>
 
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-4">
-                <h4 className="font-semibold mb-2 text-primary">Recommended Action</h4>
+                <h4 className="mb-2 font-semibold text-primary">Recommended Action</h4>
                 <p className="text-sm">{selectedVuln.recommendation}</p>
-                <p className="mt-2 text-xs text-muted-foreground">Reference: {selectedVuln.source}</p>
+                <div className="mt-3 text-xs text-muted-foreground">
+                  <span className="font-medium">Source:</span>{" "}
+                  {selectedVuln.referenceUrl ? (
+                    <a href={selectedVuln.referenceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 hover:text-foreground hover:underline">
+                      {selectedVuln.source}
+                      <ExternalLink className="size-3" />
+                    </a>
+                  ) : selectedVuln.source}
+                </div>
               </div>
             </div>
           ) : null}
@@ -183,4 +218,3 @@ export default function VulnerabilitiesPage() {
     </div>
   )
 }
-

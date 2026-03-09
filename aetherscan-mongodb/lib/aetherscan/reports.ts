@@ -130,6 +130,11 @@ function openFindings(findings: RiskFinding[]) {
   return findings.filter((finding) => finding.status !== "resolved")
 }
 
+function formatFindingLine(finding: RiskFinding) {
+  const cveText = finding.cve ? `${finding.cve}${finding.cveUrl ? ` (${finding.cveUrl})` : ""}` : "No mapped CVE"
+  return `${finding.riskLevel.toUpperCase()} | ${finding.title} | asset ${finding.assetId} | ${finding.service}/${finding.port} | ${cveText} | ${finding.status} | ${finding.recommendation}`
+}
+
 function buildExecutiveSections(scans: ScanResult[], findings: RiskFinding[], assets: Asset[]): PdfSection[] {
   const open = openFindings(findings)
   const counts = summarizeCounts(open)
@@ -158,7 +163,7 @@ function buildExecutiveSections(scans: ScanResult[], findings: RiskFinding[], as
     {
       heading: "Priority Findings",
       lines: topFindings.length
-        ? topFindings.map((finding) => `${finding.riskLevel.toUpperCase()} | ${finding.title} | asset ${finding.assetId} | ${finding.service}/${finding.port} | status ${finding.status}`)
+        ? topFindings.map((finding) => `${finding.riskLevel.toUpperCase()} | ${finding.title} | asset ${finding.assetId} | ${finding.service}/${finding.port} | ${finding.cve ?? "No CVE"} | status ${finding.status}`)
         : ["No active findings recorded."],
     },
   ]
@@ -228,9 +233,7 @@ function buildVulnerabilitySections(findings: RiskFinding[]): PdfSection[] {
     },
     {
       heading: "Open Findings",
-      lines: top.length
-        ? top.map((finding) => `${finding.riskLevel.toUpperCase()} | ${finding.title} | asset ${finding.assetId} | ${finding.service}/${finding.port} | ${finding.cve ?? "No CVE"} | ${finding.status} | ${finding.recommendation}`)
-        : ["No open findings available."],
+      lines: top.length ? top.map(formatFindingLine) : ["No open findings available."],
     },
   ]
 }
@@ -292,7 +295,7 @@ function buildCsvContent(type: ReportType, scans: ScanResult[], findings: RiskFi
       toCsvRow(["Report", "Vulnerability Register"]),
       toCsvRow(["Generated At", generatedAt]),
       "",
-      toCsvRow(["Finding ID", "Title", "Risk", "Status", "CVE", "Asset ID", "Service", "Port", "Source", "Recommendation", "Discovered At"]),
+      toCsvRow(["Finding ID", "Title", "Risk", "Status", "CVE", "CVE URL", "Asset ID", "Service", "Port", "Description", "Source", "Reference URL", "Recommendation", "Discovered At"]),
       ...findings.map((finding) =>
         toCsvRow([
           finding.id,
@@ -300,10 +303,13 @@ function buildCsvContent(type: ReportType, scans: ScanResult[], findings: RiskFi
           finding.riskLevel,
           finding.status,
           finding.cve ?? "",
+          finding.cveUrl ?? "",
           finding.assetId,
           finding.service,
           finding.port,
+          finding.description,
           finding.source,
+          finding.referenceUrl ?? "",
           finding.recommendation,
           finding.discoveredAt,
         ]),

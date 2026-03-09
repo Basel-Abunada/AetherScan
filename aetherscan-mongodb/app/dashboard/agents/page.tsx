@@ -67,7 +67,7 @@ export default function AgentsPage() {
   )
 
   const agentLaunchCommand = createdAgent?.authToken
-    ? `export AETHERSCAN_SERVER_URL="http://YOUR_SERVER_IP:3000"\nexport AETHERSCAN_AGENT_TOKEN="${createdAgent.authToken}"\nexport AETHERSCAN_ONCE=false\nnode ./scripts/aetherscan-agent.mjs`
+    ? `export AETHERSCAN_SERVER_URL="http://YOUR_SERVER_IP:3001"\nexport AETHERSCAN_AGENT_TOKEN="${createdAgent.authToken}"\nexport AETHERSCAN_ONCE=false\nnode ./scripts/aetherscan-agent.mjs`
     : ""
 
   const badgeClassName = (status: Agent["status"]) => {
@@ -389,5 +389,6 @@ export default function AgentsPage() {
     </div>
   )
 }
+
 
 

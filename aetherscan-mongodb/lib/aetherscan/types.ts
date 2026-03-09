@@ -92,12 +92,14 @@ export interface RiskFinding {
   assetId: string
   title: string
   cve?: string
+  cveUrl?: string
   service: string
   port: number
   riskLevel: RiskLevel
   description: string
   recommendation: string
   source: string
+  referenceUrl?: string
   status: FindingStatus
   discoveredAt: string
 }
