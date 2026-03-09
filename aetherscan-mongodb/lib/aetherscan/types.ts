@@ -66,6 +66,11 @@ export interface ScanSchedule {
   mode: ScanMode
 }
 
+export interface NmapScriptResult {
+  id: string
+  output: string
+}
+
 export interface AssetService {
   port: number
   protocol: "tcp" | "udp"
@@ -73,6 +78,7 @@ export interface AssetService {
   product?: string
   version?: string
   state: "open" | "closed" | "filtered"
+  scripts?: NmapScriptResult[]
 }
 
 export interface Asset {
@@ -85,6 +91,7 @@ export interface Asset {
   discoveredAt: string
   lastSeenAt: string
   services: AssetService[]
+  hostScripts?: NmapScriptResult[]
 }
 
 export interface RiskFinding {

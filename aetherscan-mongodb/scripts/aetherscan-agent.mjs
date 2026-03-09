@@ -19,6 +19,10 @@ function normalizeArray(value) {
   return Array.isArray(value) ? value : [value]
 }
 
+function limitText(value, maxLength = 4000) {
+  return value.length <= maxLength ? value : `${value.slice(0, maxLength - 3)}...`
+}
+
 function inferDeviceType(host) {
   const osMatches = normalizeArray(host.os?.osmatch)
   const osText = osMatches.map((match) => match.name || "").join(" ").toLowerCase()
@@ -35,6 +39,40 @@ function inferDeviceType(host) {
   if (fingerprint.includes("macbook") || fingerprint.includes("laptop")) return "laptop"
   if (fingerprint.includes("windows") || fingerprint.includes("workstation")) return "workstation"
   return "unknown"
+}
+
+function flattenScriptOutput(node, lines = []) {
+  if (!node || typeof node !== "object") return lines
+  if (typeof node.output === "string" && node.output.trim()) lines.push(node.output.trim())
+
+  for (const elem of normalizeArray(node.elem)) {
+    if (typeof elem === "string") {
+      if (elem.trim()) lines.push(elem.trim())
+      continue
+    }
+
+    const key = elem.key ? `${elem.key}: ` : ""
+    const text = typeof elem["#text"] === "string" ? elem["#text"].trim() : ""
+    if (text) lines.push(`${key}${text}`.trim())
+    flattenScriptOutput(elem, lines)
+  }
+
+  for (const table of normalizeArray(node.table)) {
+    if (table.key) lines.push(String(table.key))
+    flattenScriptOutput(table, lines)
+  }
+
+  return lines
+}
+
+function extractScripts(scriptNodes) {
+  return normalizeArray(scriptNodes)
+    .map((script) => {
+      const id = String(script.id || "unknown-script")
+      const output = Array.from(new Set(flattenScriptOutput(script))).join(" | ")
+      return { id, output: limitText(output || "NSE script returned a result without textual output.") }
+    })
+    .filter((script) => script.id && script.output)
 }
 
 function parseNmapXml(xml) {
@@ -62,6 +100,7 @@ function parseNmapXml(xml) {
           product: port.service?.product || undefined,
           version: port.service?.version || undefined,
           state: "open",
+          scripts: extractScripts(port.script),
         }))
 
       return {
@@ -71,17 +110,29 @@ function parseNmapXml(xml) {
         deviceType: inferDeviceType(host),
         status: "up",
         services,
+        hostScripts: extractScripts(host.hostscript?.script),
       }
     })
 }
 
+function buildNmapArgs(scanType) {
+  const args = ["-oX", "-", "-n", "-T4", "--max-retries", "2", "-sV"]
+
+  if (scanType === "quick") {
+    args.push("--top-ports", "100", "--version-light", "--host-timeout", "4m")
+  } else if (scanType === "standard") {
+    args.push("--top-ports", "1000", "--version-light", "--host-timeout", "5m")
+  } else if (scanType === "full") {
+    args.push("-p-", "-O", "--version-all", "--host-timeout", "8m")
+  } else if (scanType === "vuln") {
+    args.push("--top-ports", "1000", "-O", "--script", "vuln", "--script-timeout", "2m", "--host-timeout", "10m")
+  }
+
+  return args
+}
+
 function runNmap(target, scanType) {
-  const args = ["-oX", "-", "-n", "-T4", "--max-retries", "2", "--host-timeout", "5m", "-sV"]
-  if (scanType === "quick") args.push("--top-ports", "100", "--version-light")
-  if (scanType === "standard") args.push("--version-light")
-  if (scanType === "full") args.push("-p-", "-O")
-  if (scanType === "vuln") args.push("-O", "--script", "vuln")
-  args.push(target)
+  const args = [...buildNmapArgs(scanType), target]
 
   return new Promise((resolve, reject) => {
     const child = spawn("nmap", args, { windowsHide: true })
@@ -99,18 +150,22 @@ function runNmap(target, scanType) {
 }
 
 async function heartbeat(status = "online") {
-  await fetch(`${serverUrl}/api/agents/heartbeat`, {
+  const response = await fetch(`${serverUrl}/api/agents/heartbeat`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-agent-token": agentToken },
     body: JSON.stringify({ status, platform: process.platform }),
   })
+  if (!response.ok) throw new Error(`Heartbeat failed (${response.status})`)
 }
 
 async function fetchJob() {
   const response = await fetch(`${serverUrl}/api/agents/jobs`, {
     headers: { "x-agent-token": agentToken },
   })
-  if (!response.ok) throw new Error(await response.text())
+  if (!response.ok) {
+    const message = await response.text().catch(() => "")
+    throw new Error(`Fetch job failed (${response.status}): ${message || "Unknown error"}`)
+  }
   return response.json()
 }
 
@@ -120,8 +175,23 @@ async function submitScan(scanId, assets, durationSeconds, summary) {
     headers: { "Content-Type": "application/json", "x-agent-token": agentToken },
     body: JSON.stringify({ scanId, assets, durationSeconds, summary, platform: process.platform }),
   })
-  if (!response.ok) throw new Error(await response.text())
+  if (!response.ok) {
+    const text = await response.text().catch(() => "")
+    throw new Error(`Submit scan failed (${response.status}): ${text || "Unknown server error"}`)
+  }
   return response.json()
+}
+
+async function markScanFailed(scanId, message) {
+  const response = await fetch(`${serverUrl}/api/scans/${scanId}/fail`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "x-agent-token": agentToken },
+    body: JSON.stringify({ message, platform: process.platform }),
+  })
+  if (!response.ok) {
+    const text = await response.text().catch(() => "")
+    throw new Error(`Mark scan failed failed (${response.status}): ${text || "Unknown server error"}`)
+  }
 }
 
 try {
@@ -136,11 +206,23 @@ try {
       continue
     }
 
-    console.log(`Running scan ${job.id} against ${job.target}`)
-    const startedAt = Date.now()
-    const assets = await runNmap(job.target, job.scanType)
-    const result = await submitScan(job.id, assets, Math.max(1, Math.round((Date.now() - startedAt) / 1000)), `Agent completed scan ${job.id}`)
-    console.log(JSON.stringify(result, null, 2))
+    try {
+      console.log(`Running scan ${job.id} against ${job.target} with profile ${job.scanType}`)
+      const startedAt = Date.now()
+      const assets = await runNmap(job.target, job.scanType)
+      const summary = `Agent completed ${job.scanType} scan ${job.id} with ${assets.length} discovered host(s)`
+      const result = await submitScan(job.id, assets, Math.max(1, Math.round((Date.now() - startedAt) / 1000)), summary)
+      console.log(JSON.stringify(result, null, 2))
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown scan failure"
+      console.error(message)
+      await heartbeat("degraded").catch(() => null)
+      await markScanFailed(job.id, message).catch((markError) => {
+        const markMessage = markError instanceof Error ? markError.message : "Unknown fail-route error"
+        console.error(markMessage)
+      })
+      if (once) throw error
+    }
 
     if (once) break
   }

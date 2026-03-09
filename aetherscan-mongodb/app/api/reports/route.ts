@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { requireUser } from "@/lib/aetherscan/auth"
 import { buildReportContent } from "@/lib/aetherscan/reports"
 import { readDatabase, updateDatabase } from "@/lib/aetherscan/store"
@@ -24,7 +24,7 @@ export async function POST(request: Request) {
   const fileName = `${id}.${format}`
   const generatedAt = nowIso()
 
-  const record = {
+  const record: typeof database.reports[number] = {
     id,
     name: `AetherScan ${type} report`,
     type,
@@ -47,3 +47,4 @@ export async function POST(request: Request) {
     },
   })
 }
+

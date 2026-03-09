@@ -1,4 +1,4 @@
-import type { Asset, RiskFinding, RiskLevel } from "@/lib/aetherscan/types"
+import type { Asset, NmapScriptResult, RiskFinding, RiskLevel } from "@/lib/aetherscan/types"
 import { makeId, nowIso } from "@/lib/aetherscan/utils"
 
 type ServiceContext = {
@@ -18,6 +18,17 @@ type FindingTemplate = {
   description: (context: ServiceContext) => string
   recommendation: (context: ServiceContext) => string
   match: (context: ServiceContext) => boolean
+}
+
+type ScriptFindingTemplate = {
+  scriptId: string
+  title: string
+  riskLevel: RiskLevel
+  cve?: string
+  source: string
+  referenceUrl?: string
+  description: (output: string, serviceLabel: string) => string
+  recommendation: (output: string) => string
 }
 
 function nvdUrl(cve: string) {
@@ -58,6 +69,21 @@ function includesAny(haystack: string, needles: string[]) {
 function formatService(context: ServiceContext) {
   const productVersion = [context.product, context.version].filter(Boolean).join(" ").trim()
   return productVersion || context.name || `port ${context.port}`
+}
+
+function truncate(value: string, maxLength = 280) {
+  return value.length <= maxLength ? value : `${value.slice(0, maxLength - 3)}...`
+}
+
+function deriveGenericRisk(output: string): RiskLevel {
+  const lower = output.toLowerCase()
+  if (includesAny(lower, ["critical", "remote code execution", "wormable", "cvss: 9", "cvss:9", "high"])) return "high"
+  if (includesAny(lower, ["medium", "moderate", "authentication bypass", "information disclosure"])) return "medium"
+  return "low"
+}
+
+function extractCve(output: string) {
+  return output.match(/CVE-\d{4}-\d{4,7}/i)?.[0]?.toUpperCase()
 }
 
 const templates: FindingTemplate[] = [
@@ -363,12 +389,177 @@ const templates: FindingTemplate[] = [
   },
 ]
 
+const scriptTemplates: ScriptFindingTemplate[] = [
+  {
+    scriptId: "smb-vuln-ms17-010",
+    title: "SMB Remote Code Execution Vulnerability Detected",
+    riskLevel: "high",
+    cve: "CVE-2017-0144",
+    source: "NVD / Microsoft / NSE smb-vuln-ms17-010",
+    referenceUrl: nvdUrl("CVE-2017-0144"),
+    description: (output, serviceLabel) => `${serviceLabel} was flagged by the NSE script smb-vuln-ms17-010. ${truncate(output)}`,
+    recommendation: () => "Patch the target with the relevant Microsoft security update, disable SMBv1, and restrict SMB exposure to trusted hosts only.",
+  },
+  {
+    scriptId: "smb-vuln-ms08-067",
+    title: "SMB MS08-067 Vulnerability Detected",
+    riskLevel: "high",
+    cve: "CVE-2008-4250",
+    source: "NVD / Microsoft / NSE smb-vuln-ms08-067",
+    referenceUrl: nvdUrl("CVE-2008-4250"),
+    description: (output, serviceLabel) => `${serviceLabel} was flagged by the NSE script smb-vuln-ms08-067. ${truncate(output)}`,
+    recommendation: () => "Apply the Microsoft patch for MS08-067 immediately and remove exposure of the vulnerable SMB service from untrusted networks.",
+  },
+  {
+    scriptId: "ssl-heartbleed",
+    title: "OpenSSL Heartbleed Vulnerability Detected",
+    riskLevel: "high",
+    cve: "CVE-2014-0160",
+    source: "NVD / OpenSSL / NSE ssl-heartbleed",
+    referenceUrl: nvdUrl("CVE-2014-0160"),
+    description: (output, serviceLabel) => `${serviceLabel} appears vulnerable to Heartbleed based on NSE output. ${truncate(output)}`,
+    recommendation: () => "Upgrade OpenSSL to a fixed release, replace affected private keys and certificates, and verify TLS endpoints after remediation.",
+  },
+  {
+    scriptId: "ssl-poodle",
+    title: "SSL POODLE Vulnerability Detected",
+    riskLevel: "medium",
+    cve: "CVE-2014-3566",
+    source: "NVD / NSE ssl-poodle",
+    referenceUrl: nvdUrl("CVE-2014-3566"),
+    description: (output, serviceLabel) => `${serviceLabel} appears to support SSLv3 or weak downgrade behavior associated with POODLE. ${truncate(output)}`,
+    recommendation: () => "Disable SSLv3 and legacy downgrade paths, prefer TLS 1.2 or newer, and retest the endpoint after configuration changes.",
+  },
+  {
+    scriptId: "http-shellshock",
+    title: "Shellshock Exposure Detected",
+    riskLevel: "high",
+    cve: "CVE-2014-6271",
+    source: "NVD / NSE http-shellshock",
+    referenceUrl: nvdUrl("CVE-2014-6271"),
+    description: (output, serviceLabel) => `${serviceLabel} appears vulnerable to Shellshock-style command execution based on NSE testing. ${truncate(output)}`,
+    recommendation: () => "Patch Bash and CGI handlers immediately, disable unnecessary CGI scripts, and restrict web administrative endpoints.",
+  },
+  {
+    scriptId: "ftp-vsftpd-backdoor",
+    title: "VSFTPD Backdoor Exposure Detected",
+    riskLevel: "high",
+    cve: "CVE-2011-2523",
+    source: "NVD / NSE ftp-vsftpd-backdoor",
+    referenceUrl: nvdUrl("CVE-2011-2523"),
+    description: (output, serviceLabel) => `${serviceLabel} was flagged by NSE as a VSFTPD backdoor candidate. ${truncate(output)}`,
+    recommendation: () => "Remove the compromised VSFTPD version, install a trusted patched release, and rotate any potentially exposed credentials.",
+  },
+  {
+    scriptId: "http-vuln-cve2017-5638",
+    title: "Apache Struts Remote Code Execution Detected",
+    riskLevel: "high",
+    cve: "CVE-2017-5638",
+    source: "NVD / NSE http-vuln-cve2017-5638",
+    referenceUrl: nvdUrl("CVE-2017-5638"),
+    description: (output, serviceLabel) => `${serviceLabel} may be vulnerable to Apache Struts command execution according to NSE output. ${truncate(output)}`,
+    recommendation: () => "Patch Apache Struts immediately, remove vulnerable plugins, and review application logs for exploitation attempts.",
+  },
+  {
+    scriptId: "http-vuln-cve2014-3704",
+    title: "Drupal SQL Injection Vulnerability Detected",
+    riskLevel: "high",
+    cve: "CVE-2014-3704",
+    source: "NVD / NSE http-vuln-cve2014-3704",
+    referenceUrl: nvdUrl("CVE-2014-3704"),
+    description: (output, serviceLabel) => `${serviceLabel} was flagged for Drupal SQL injection exposure. ${truncate(output)}`,
+    recommendation: () => "Patch Drupal to a fixed version, rotate privileged credentials, and review the site for compromise indicators.",
+  },
+  {
+    scriptId: "rdp-vuln-ms12-020",
+    title: "RDP MS12-020 Vulnerability Detected",
+    riskLevel: "high",
+    cve: "CVE-2012-0002",
+    source: "NVD / NSE rdp-vuln-ms12-020",
+    referenceUrl: nvdUrl("CVE-2012-0002"),
+    description: (output, serviceLabel) => `${serviceLabel} appears vulnerable to the MS12-020 Remote Desktop flaw. ${truncate(output)}`,
+    recommendation: () => "Apply the Microsoft MS12-020 update, restrict RDP exposure, and enforce VPN or jump-host access only.",
+  },
+]
+
+function addFinding(findings: RiskFinding[], emitted: Set<string>, key: string, finding: RiskFinding) {
+  if (emitted.has(key)) return
+  emitted.add(key)
+  findings.push(finding)
+}
+
+function buildScriptFinding({
+  scanId,
+  assetId,
+  service,
+  port,
+  script,
+  discoveredAt,
+}: {
+  scanId: string
+  assetId: string
+  service: string
+  port: number
+  script: NmapScriptResult
+  discoveredAt: string
+}) {
+  const output = script.output.trim()
+  const serviceLabel = port > 0 ? `${service}/${port}` : service
+  const knownTemplate = scriptTemplates.find((template) => template.scriptId === script.id)
+
+  if (knownTemplate) {
+    return {
+      id: makeId("finding"),
+      scanId,
+      assetId,
+      title: knownTemplate.title,
+      cve: knownTemplate.cve,
+      cveUrl: knownTemplate.cve ? nvdUrl(knownTemplate.cve) : undefined,
+      service,
+      port,
+      riskLevel: knownTemplate.riskLevel,
+      description: knownTemplate.description(output, serviceLabel),
+      recommendation: knownTemplate.recommendation(output),
+      source: knownTemplate.source,
+      referenceUrl: knownTemplate.referenceUrl,
+      status: "open" as const,
+      discoveredAt,
+    }
+  }
+
+  const genericCve = extractCve(output)
+  const genericTitle = script.id.includes("vuln") || genericCve
+    ? `${script.id.replace(/-/g, " ").replace(/\b\w/g, (character) => character.toUpperCase())} Result`
+    : null
+
+  if (!genericTitle) return null
+
+  return {
+    id: makeId("finding"),
+    scanId,
+    assetId,
+    title: genericTitle,
+    cve: genericCve,
+    cveUrl: genericCve ? nvdUrl(genericCve) : undefined,
+    service,
+    port,
+    riskLevel: deriveGenericRisk(output),
+    description: `${serviceLabel} returned an NSE vulnerability-related script result from ${script.id}. ${truncate(output)}`,
+    recommendation: "Review the linked NSE script output and referenced CVE, validate the affected component version, apply vendor patches, and reduce exposure of the affected service until remediation is complete.",
+    source: `Nmap NSE ${script.id}`,
+    referenceUrl: genericCve ? nvdUrl(genericCve) : undefined,
+    status: "open" as const,
+    discoveredAt,
+  }
+}
+
 export function buildFindingsForAssets(scanId: string, assets: Asset[]): RiskFinding[] {
   const discoveredAt = nowIso()
   const emitted = new Set<string>()
+  const findings: RiskFinding[] = []
 
-  return assets.flatMap((asset) =>
-    asset.services.flatMap((service) => {
+  for (const asset of assets) {
+    for (const service of asset.services) {
       const context: ServiceContext = {
         name: normalize(service.name),
         product: normalize(service.product),
@@ -377,15 +568,8 @@ export function buildFindingsForAssets(scanId: string, assets: Asset[]): RiskFin
         port: service.port,
       }
 
-      return templates
-        .filter((template) => template.match(context))
-        .filter((template) => {
-          const key = `${asset.id}:${service.port}:${template.title}`
-          if (emitted.has(key)) return false
-          emitted.add(key)
-          return true
-        })
-        .map((template) => ({
+      for (const template of templates.filter((entry) => entry.match(context))) {
+        addFinding(findings, emitted, `${asset.id}:${service.port}:${template.title}`, {
           id: makeId("finding"),
           scanId,
           assetId: asset.id,
@@ -401,9 +585,38 @@ export function buildFindingsForAssets(scanId: string, assets: Asset[]): RiskFin
           referenceUrl: template.referenceUrl,
           status: "open",
           discoveredAt,
-        }))
-    }),
-  )
+        })
+      }
+
+      for (const script of service.scripts ?? []) {
+        const finding = buildScriptFinding({
+          scanId,
+          assetId: asset.id,
+          service: service.name,
+          port: service.port,
+          script,
+          discoveredAt,
+        })
+        if (!finding) continue
+        addFinding(findings, emitted, `${asset.id}:${service.port}:${script.id}:${finding.title}`, finding)
+      }
+    }
+
+    for (const script of asset.hostScripts ?? []) {
+      const finding = buildScriptFinding({
+        scanId,
+        assetId: asset.id,
+        service: "hostscript",
+        port: 0,
+        script,
+        discoveredAt,
+      })
+      if (!finding) continue
+      addFinding(findings, emitted, `${asset.id}:host:${script.id}:${finding.title}`, finding)
+    }
+  }
+
+  return findings
 }
 
 export function summarizeFindings(findings: RiskFinding[]) {
@@ -415,4 +628,3 @@ export function summarizeFindings(findings: RiskFinding[]) {
     { high: 0, medium: 0, low: 0 },
   )
 }
-

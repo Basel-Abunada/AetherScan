@@ -41,25 +41,33 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { clearSession } from "@/lib/aetherscan-client"
+import type { UserRole } from "@/lib/aetherscan/types"
 
-const mainNavItems = [
+type NavItem = {
+  title: string
+  href: string
+  icon: React.ComponentType<{ className?: string }>
+  roles?: readonly UserRole[]
+}
+
+const mainNavItems: readonly NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { title: "Scan Schedules", href: "/dashboard/scans", icon: Calendar, roles: ["admin", "engineer"] },
   { title: "Scan Results", href: "/dashboard/results", icon: Scan },
   { title: "Network Assets", href: "/dashboard/assets", icon: Monitor },
   { title: "Vulnerabilities", href: "/dashboard/vulnerabilities", icon: Shield },
   { title: "Agents", href: "/dashboard/agents", icon: Server, roles: ["admin", "engineer"] },
-] as const
+]
 
-const secondaryNavItems = [
+const secondaryNavItems: readonly NavItem[] = [
   { title: "Reports", href: "/dashboard/reports", icon: FileText },
   { title: "User Management", href: "/dashboard/users", icon: Users, roles: ["admin"] },
   { title: "Settings", href: "/dashboard/settings", icon: Settings },
   { title: "Help & Support", href: "/dashboard/help", icon: HelpCircle },
-] as const
+]
 
 interface AppSidebarProps {
-  userRole?: "admin" | "engineer" | "technician"
+  userRole?: UserRole
   userName?: string
   alertCount?: number
 }
@@ -68,7 +76,7 @@ export function AppSidebar({ userRole = "admin", userName = "Basel Abunada", ale
   const pathname = usePathname()
   const router = useRouter()
 
-  const allowed = (roles?: readonly string[]) => !roles || roles.includes(userRole)
+  const allowed = (roles?: readonly UserRole[]) => !roles || roles.includes(userRole)
   const filteredMainItems = mainNavItems.filter((item) => allowed(item.roles))
   const filteredSecondaryItems = secondaryNavItems.filter((item) => allowed(item.roles))
 

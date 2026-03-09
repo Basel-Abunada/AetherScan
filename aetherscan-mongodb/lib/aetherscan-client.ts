@@ -65,7 +65,7 @@ export function scanTypeLabel(scanType: string) {
   switch (scanType) {
     case "quick": return "Quick Scan"
     case "standard": return "Standard Scan"
-    case "full": return "Full Scan"
+    case "full": return "Advanced Scan"
     case "vuln": return "Vulnerability Scan"
     default: return scanType
   }
@@ -120,3 +120,4 @@ export async function downloadReport(payload: { type: string; format: "pdf" | "c
   anchor.remove()
   window.URL.revokeObjectURL(url)
 }
+

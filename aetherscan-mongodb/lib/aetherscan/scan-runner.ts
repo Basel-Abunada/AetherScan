@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process"
-import type { Asset, AssetService, ScanType } from "@/lib/aetherscan/types"
+import type { Asset, AssetService, NmapScriptResult, ScanType } from "@/lib/aetherscan/types"
 import { makeId, nowIso } from "@/lib/aetherscan/utils"
 
 function assetWithTimestamps(asset: Omit<Asset, "id" | "discoveredAt" | "lastSeenAt">): Asset {
@@ -18,16 +18,25 @@ function parseServices(portSegment: string): AssetService[] {
     .map((segment) => segment.trim())
     .filter(Boolean)
     .map((segment) => {
-      const [portProto, state, , service] = segment.split("/")
-      const [port] = portProto.split("/")
+      const [port, state, , service] = segment.split("/")
       return {
         port: Number(port),
         protocol: "tcp" as const,
         name: service || "unknown",
         state: (state as AssetService["state"]) || "open",
+        scripts: [] as NmapScriptResult[],
       }
     })
     .filter((service) => Number.isFinite(service.port) && service.state === "open")
+}
+
+function buildNmapArgs(scanType: ScanType) {
+  const args = ["-oG", "-", "-n", "-T4", "--max-retries", "2", "-sV"]
+  if (scanType === "quick") args.push("--top-ports", "100", "--version-light", "--host-timeout", "4m")
+  if (scanType === "standard") args.push("--top-ports", "1000", "--version-light", "--host-timeout", "5m")
+  if (scanType === "full") args.push("-p-", "-O", "--version-all", "--host-timeout", "8m")
+  if (scanType === "vuln") args.push("--top-ports", "1000", "-O", "--script", "vuln", "--script-timeout", "2m", "--host-timeout", "10m")
+  return args
 }
 
 export async function executeScan({
@@ -37,12 +46,7 @@ export async function executeScan({
   target: string
   scanType: ScanType
 }) {
-  const args = ["-oG", "-", "-n", "-T4", "--max-retries", "2", "--host-timeout", "5m", "-sV"]
-  if (scanType === "quick") args.push("--top-ports", "100", "--version-light")
-  if (scanType === "standard") args.push("--version-light")
-  if (scanType === "full") args.push("-p-")
-  if (scanType === "vuln") args.push("--script", "vuln")
-  args.push(target)
+  const args = [...buildNmapArgs(scanType), target]
 
   return new Promise<Asset[]>((resolve, reject) => {
     const child = spawn("nmap", args, { windowsHide: true })
@@ -79,6 +83,7 @@ export async function executeScan({
             os: undefined,
             status: "up",
             services,
+            hostScripts: [],
           })
         })
 

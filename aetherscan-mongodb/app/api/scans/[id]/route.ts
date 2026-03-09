@@ -15,6 +15,8 @@ export async function DELETE(request: Request, { params }: Params) {
     database.scans = database.scans.filter((entry) => entry.id !== id)
     database.findings = database.findings.filter((finding) => finding.scanId !== id)
     database.assets = database.assets.filter((asset) => !scan.assetIds.includes(asset.id))
+    database.alerts = database.alerts.filter((alert) => alert.scanId !== id)
+    database.reports = database.reports.filter((report) => !report.name.includes(scan.id))
     return true
   })
 
