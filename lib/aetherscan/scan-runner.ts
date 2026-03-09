@@ -37,10 +37,12 @@ export async function executeScan({
   target: string
   scanType: ScanType
 }) {
-  const args = ["-oG", "-", "-sV", target]
-  if (scanType === "quick") args.unshift("--top-ports", "100")
-  if (scanType === "full") args.unshift("-p-")
-  if (scanType === "vuln") args.unshift("--script", "vuln")
+  const args = ["-oG", "-", "-n", "-T4", "--max-retries", "2", "--host-timeout", "5m", "-sV"]
+  if (scanType === "quick") args.push("--top-ports", "100", "--version-light")
+  if (scanType === "standard") args.push("--version-light")
+  if (scanType === "full") args.push("-p-")
+  if (scanType === "vuln") args.push("--script", "vuln")
+  args.push(target)
 
   return new Promise<Asset[]>((resolve, reject) => {
     const child = spawn("nmap", args, { windowsHide: true })

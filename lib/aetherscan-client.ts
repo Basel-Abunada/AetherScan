@@ -79,6 +79,8 @@ export async function updateUser(id: string, payload: Partial<Pick<User, "name" 
 export async function deleteUser(id: string) { return apiRequest<{ ok: boolean }>(`/api/users/${id}`, { method: "DELETE" }) }
 export async function fetchAgents() { return apiRequest<Agent[]>("/api/agents") }
 export async function registerAgent(payload: { name: string; hostname: string; ipAddress: string; platform: string; description?: string; mode?: string; targetHint?: string }) { return apiRequest<Agent & { authToken?: string }>("/api/agents/register", { method: "POST", body: JSON.stringify(payload) }) }
+export async function updateAgent(id: string, payload: Partial<Pick<Agent, "name" | "hostname" | "ipAddress" | "platform" | "description" | "targetHint" | "status">>) { return apiRequest<Agent>(`/api/agents/${id}`, { method: "PATCH", body: JSON.stringify(payload) }) }
+export async function deleteAgent(id: string) { return apiRequest<{ ok: boolean }>(`/api/agents/${id}`, { method: "DELETE" }) }
 export async function fetchSchedules() { return apiRequest<ScanSchedule[]>("/api/schedules") }
 export async function createSchedule(payload: { name: string; agentId: string; target: string; frequency: string; startTime: string; scanType: string; mode: string }) { return apiRequest<ScanSchedule>("/api/schedules", { method: "POST", body: JSON.stringify(payload) }) }
 export async function updateSchedule(id: string, payload: Partial<Pick<ScanSchedule, "status" | "name" | "frequency" | "startTime" | "scanType" | "target">>) { return apiRequest<ScanSchedule>(`/api/schedules/${id}`, { method: "PATCH", body: JSON.stringify(payload) }) }

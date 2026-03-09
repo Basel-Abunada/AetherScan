@@ -76,10 +76,12 @@ function parseNmapXml(xml) {
 }
 
 function runNmap(target, scanType) {
-  const args = ["-oX", "-", "-sV", "-O", target]
-  if (scanType === "quick") args.unshift("--top-ports", "100")
-  if (scanType === "full") args.unshift("-p-")
-  if (scanType === "vuln") args.unshift("--script", "vuln")
+  const args = ["-oX", "-", "-n", "-T4", "--max-retries", "2", "--host-timeout", "5m", "-sV"]
+  if (scanType === "quick") args.push("--top-ports", "100", "--version-light")
+  if (scanType === "standard") args.push("--version-light")
+  if (scanType === "full") args.push("-p-", "-O")
+  if (scanType === "vuln") args.push("-O", "--script", "vuln")
+  args.push(target)
 
   return new Promise((resolve, reject) => {
     const child = spawn("nmap", args, { windowsHide: true })

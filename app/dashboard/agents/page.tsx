@@ -7,29 +7,51 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Server, Wifi, WifiOff, RefreshCw, Plus } from "lucide-react"
+import { Server, Wifi, WifiOff, RefreshCw, Plus, Pencil, Trash2 } from "lucide-react"
 import type { Agent, ScanResult } from "@/lib/aetherscan/types"
-import { fetchAgents, fetchScans, formatDateTime, registerAgent, timeAgo } from "@/lib/aetherscan-client"
+import { deleteAgent, fetchAgents, fetchScans, formatDateTime, registerAgent, timeAgo, updateAgent } from "@/lib/aetherscan-client"
+
+type AgentForm = {
+  name: string
+  hostname: string
+  ipAddress: string
+  platform: string
+  description: string
+  mode: string
+  targetHint: string
+}
+
+const emptyForm: AgentForm = {
+  name: "",
+  hostname: "",
+  ipAddress: "",
+  platform: "Kali Linux",
+  description: "",
+  mode: "live",
+  targetHint: "",
+}
 
 export default function AgentsPage() {
   const [agents, setAgents] = useState<Agent[]>([])
   const [scans, setScans] = useState<ScanResult[]>([])
-  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [createdAgent, setCreatedAgent] = useState<(Agent & { authToken?: string }) | null>(null)
-  const [form, setForm] = useState({
-    name: "",
-    hostname: "",
-    ipAddress: "",
-    platform: "Kali Linux",
-    description: "",
-    mode: "live",
-    targetHint: "",
-  })
+  const [editingAgent, setEditingAgent] = useState<Agent | null>(null)
+  const [form, setForm] = useState<AgentForm>(emptyForm)
+  const [editForm, setEditForm] = useState<AgentForm>(emptyForm)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState("")
 
   const loadData = async () => {
-    const [agentsData, scansData] = await Promise.all([fetchAgents(), fetchScans()])
-    setAgents(agentsData)
-    setScans(scansData)
+    setError("")
+    try {
+      const [agentsData, scansData] = await Promise.all([fetchAgents(), fetchScans()])
+      setAgents(agentsData)
+      setScans(scansData)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load agents")
+    }
   }
 
   useEffect(() => {
@@ -42,9 +64,24 @@ export default function AgentsPage() {
     () => Object.fromEntries(agents.map((agent) => [agent.id, scans.filter((scan) => scan.agentId === agent.id)])),
     [agents, scans],
   )
+
   const agentLaunchCommand = createdAgent?.authToken
     ? `export AETHERSCAN_SERVER_URL="http://YOUR_SERVER_IP:3000"\nexport AETHERSCAN_AGENT_TOKEN="${createdAgent.authToken}"\nexport AETHERSCAN_ONCE=false\nnode ./scripts/aetherscan-agent.mjs`
     : ""
+
+  const openEditDialog = (agent: Agent) => {
+    setEditingAgent(agent)
+    setEditForm({
+      name: agent.name,
+      hostname: agent.hostname,
+      ipAddress: agent.ipAddress,
+      platform: agent.platform,
+      description: agent.description ?? "",
+      mode: agent.mode,
+      targetHint: agent.targetHint ?? "",
+    })
+    setIsEditDialogOpen(true)
+  }
 
   return (
     <div className="space-y-6">
@@ -54,11 +91,11 @@ export default function AgentsPage() {
           <p className="text-muted-foreground">Register agents, monitor status, and track real scan activity</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => loadData()}>
+          <Button variant="outline" onClick={() => void loadData()}>
             <RefreshCw className="mr-2 size-4" />
             Refresh
           </Button>
-          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 size-4" />
@@ -107,14 +144,24 @@ export default function AgentsPage() {
                 ) : null}
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                   Close
                 </Button>
                 <Button
+                  disabled={submitting || !form.name || !form.hostname || !form.ipAddress}
                   onClick={async () => {
-                    const agent = await registerAgent(form)
-                    setCreatedAgent(agent)
-                    await loadData()
+                    setSubmitting(true)
+                    setError("")
+                    try {
+                      const agent = await registerAgent(form)
+                      setCreatedAgent(agent)
+                      setForm(emptyForm)
+                      await loadData()
+                    } catch (err) {
+                      setError(err instanceof Error ? err.message : "Failed to register agent")
+                    } finally {
+                      setSubmitting(false)
+                    }
                   }}
                 >
                   Register Agent
@@ -124,6 +171,70 @@ export default function AgentsPage() {
           </Dialog>
         </div>
       </div>
+
+      {error ? <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div> : null}
+
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[560px]">
+          <DialogHeader>
+            <DialogTitle>Edit Agent</DialogTitle>
+            <DialogDescription>Update the selected agent details</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input value={editForm.name} onChange={(event) => setEditForm((current) => ({ ...current, name: event.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Hostname</Label>
+                <Input value={editForm.hostname} onChange={(event) => setEditForm((current) => ({ ...current, hostname: event.target.value }))} />
+              </div>
+              <div className="space-y-2">
+                <Label>IP Address</Label>
+                <Input value={editForm.ipAddress} onChange={(event) => setEditForm((current) => ({ ...current, ipAddress: event.target.value }))} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Platform</Label>
+              <Input value={editForm.platform} onChange={(event) => setEditForm((current) => ({ ...current, platform: event.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Input value={editForm.description} onChange={(event) => setEditForm((current) => ({ ...current, description: event.target.value }))} />
+            </div>
+            <div className="space-y-2">
+              <Label>Default Target Hint</Label>
+              <Input value={editForm.targetHint} onChange={(event) => setEditForm((current) => ({ ...current, targetHint: event.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              disabled={submitting || !editingAgent || !editForm.name || !editForm.hostname || !editForm.ipAddress}
+              onClick={async () => {
+                if (!editingAgent) return
+                setSubmitting(true)
+                setError("")
+                try {
+                  await updateAgent(editingAgent.id, editForm)
+                  setIsEditDialogOpen(false)
+                  setEditingAgent(null)
+                  await loadData()
+                } catch (err) {
+                  setError(err instanceof Error ? err.message : "Failed to update agent")
+                } finally {
+                  setSubmitting(false)
+                }
+              }}
+            >
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="grid gap-4 sm:grid-cols-4">
         <Card>
@@ -176,13 +287,41 @@ export default function AgentsPage() {
           return (
             <Card key={agent.id}>
               <CardHeader className="pb-2">
-                <div className="flex items-start gap-3">
-                  <div className={`rounded-md p-2 ${agent.status === "online" ? "bg-green-100 text-green-600" : "bg-muted text-muted-foreground"}`}>
-                    <Server className="size-5" />
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start gap-3">
+                    <div className={`rounded-md p-2 ${agent.status === "online" ? "bg-green-100 text-green-600" : "bg-muted text-muted-foreground"}`}>
+                      <Server className="size-5" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-base">{agent.name}</CardTitle>
+                      <CardDescription>{agent.platform} | {agent.hostname}</CardDescription>
+                    </div>
                   </div>
-                  <div>
-                    <CardTitle className="text-base">{agent.name}</CardTitle>
-                    <CardDescription>{agent.platform} � {agent.hostname}</CardDescription>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => openEditDialog(agent)}>
+                      <Pencil className="mr-2 size-4" />
+                      Edit
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={async () => {
+                        setError("")
+                        try {
+                          await deleteAgent(agent.id)
+                          if (editingAgent?.id === agent.id) {
+                            setEditingAgent(null)
+                            setIsEditDialogOpen(false)
+                          }
+                          await loadData()
+                        } catch (err) {
+                          setError(err instanceof Error ? err.message : "Failed to delete agent")
+                        }
+                      }}
+                    >
+                      <Trash2 className="mr-2 size-4" />
+                      Delete
+                    </Button>
                   </div>
                 </div>
               </CardHeader>

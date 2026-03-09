@@ -4,7 +4,7 @@ import { updateDatabase } from "@/lib/aetherscan/store"
 import { makeId, nowIso } from "@/lib/aetherscan/utils"
 
 export async function POST(request: Request) {
-  const auth = await requireUserRole(request, ["admin"])
+  const auth = await requireUserRole(request, ["admin", "engineer"])
   if (!auth.user) return auth.response
   const body = await request.json()
 
@@ -28,4 +28,3 @@ export async function POST(request: Request) {
 
   return NextResponse.json(agent, { status: 201 })
 }
-
