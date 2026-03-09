@@ -32,9 +32,9 @@ export async function POST(request: Request) {
     const assetsInput = Array.isArray(body.assets) ? (body.assets as IncomingAsset[]) : []
     const assets = assetsInput.map((asset) => ({
       id: makeId("asset"),
-      ipAddress: asset.ipAddress,
-      hostname: asset.hostname || asset.ipAddress,
-      os: asset.os,
+      ipAddress: String(asset.ipAddress ?? "unknown"),
+      hostname: String(asset.hostname ?? asset.ipAddress ?? "unknown-host"),
+      os: asset.os == null ? undefined : String(asset.os),
       deviceType: asset.deviceType ?? "unknown",
       status: asset.status ?? "up",
       discoveredAt: new Date().toISOString(),
@@ -46,9 +46,9 @@ export async function POST(request: Request) {
       services: (asset.services ?? []).map((service) => ({
         port: Number(service.port),
         protocol: service.protocol ?? "tcp",
-        name: service.name,
-        product: service.product,
-        version: service.version,
+        name: String(service.name ?? "unknown"),
+        product: service.product == null ? undefined : String(service.product),
+        version: service.version == null ? undefined : String(service.version),
         state: service.state ?? "open",
         scripts: (service.scripts ?? []).map((script) => ({
           id: String(script.id ?? "unknown-script"),
@@ -152,3 +152,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: error instanceof Error ? error.message : "Failed to submit scan" }, { status: 500 })
   }
 }
+

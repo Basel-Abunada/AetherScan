@@ -35,8 +35,8 @@ function nvdUrl(cve: string) {
   return `https://nvd.nist.gov/vuln/detail/${cve}`
 }
 
-function normalize(value?: string) {
-  return (value ?? "").toLowerCase()
+function normalize(value?: string | number | boolean | null) {
+  return String(value ?? "").toLowerCase()
 }
 
 function parseVersion(value?: string) {
@@ -679,4 +679,6 @@ export function summarizeFindings(findings: RiskFinding[]) {
     { high: 0, medium: 0, low: 0 },
   )
 }
+
+
 

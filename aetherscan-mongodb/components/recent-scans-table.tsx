@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import {
   Table,
@@ -29,7 +29,7 @@ export function RecentScansTable({ scans }: RecentScansTableProps) {
   if (!scans.length) {
     return (
       <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-        No scans yet. Run a demo scan to populate this table.
+        No scans yet. Run a scan to populate this table.
       </div>
     )
   }
@@ -105,3 +105,4 @@ export function RecentScansTable({ scans }: RecentScansTableProps) {
     </Table>
   )
 }
+

@@ -8,7 +8,13 @@ export async function GET(request: Request) {
 
   const database = await readDatabase()
   const openFindings = database.findings.filter((finding) => finding.status !== "resolved")
+  const openFindingIds = new Set(openFindings.map((finding) => finding.id))
   const activeAgents = database.agents.filter((agent) => agent.status === "online" || agent.status === "occupied")
+  const visibleAlerts = database.alerts.filter((alert) => {
+    if (alert.findingId) return openFindingIds.has(alert.findingId)
+    if (alert.category === "finding-high" || alert.category === "finding-medium") return false
+    return true
+  })
 
   return NextResponse.json({
     stats: {
@@ -24,7 +30,7 @@ export async function GET(request: Request) {
       low: openFindings.filter((finding) => finding.riskLevel === "low").length,
     },
     recentScans: database.scans.slice(-5).reverse(),
-    alerts: database.alerts.slice(-6).reverse(),
+    alerts: visibleAlerts.slice(-6).reverse(),
     agents: database.agents.map(({ authToken: _authToken, ...agent }) => agent),
   })
 }
