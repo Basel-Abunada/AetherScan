@@ -1,9 +1,11 @@
 import { XMLParser } from "fast-xml-parser"
 import { spawn } from "node:child_process"
 
-const serverUrl = process.env.AETHERSCAN_SERVER_URL || "http://localhost:3000"
+const serverUrl = process.env.AETHERSCAN_SERVER_URL || "http://localhost:3001"
 const agentToken = process.env.AETHERSCAN_AGENT_TOKEN
-const once = process.env.AETHERSCAN_ONCE !== "false"
+const once = process.env.AETHERSCAN_ONCE === "true"
+const POLL_INTERVAL_MS = 5000
+const REQUEST_TIMEOUT_MS = 15000
 
 if (!agentToken) {
   console.error("Missing AETHERSCAN_AGENT_TOKEN")
@@ -149,8 +151,15 @@ function runNmap(target, scanType) {
   })
 }
 
+async function request(path, init = {}) {
+  return fetch(`${serverUrl}${path}`, {
+    ...init,
+    signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+  })
+}
+
 async function heartbeat(status = "online") {
-  const response = await fetch(`${serverUrl}/api/agents/heartbeat`, {
+  const response = await request("/api/agents/heartbeat", {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-agent-token": agentToken },
     body: JSON.stringify({ status, platform: process.platform }),
@@ -159,7 +168,7 @@ async function heartbeat(status = "online") {
 }
 
 async function fetchJob() {
-  const response = await fetch(`${serverUrl}/api/agents/jobs`, {
+  const response = await request("/api/agents/jobs", {
     headers: { "x-agent-token": agentToken },
   })
   if (!response.ok) {
@@ -170,7 +179,7 @@ async function fetchJob() {
 }
 
 async function submitScan(scanId, assets, durationSeconds, summary) {
-  const response = await fetch(`${serverUrl}/api/submit-scan`, {
+  const response = await request("/api/submit-scan", {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-agent-token": agentToken },
     body: JSON.stringify({ scanId, assets, durationSeconds, summary, platform: process.platform }),
@@ -183,7 +192,7 @@ async function submitScan(scanId, assets, durationSeconds, summary) {
 }
 
 async function markScanFailed(scanId, message) {
-  const response = await fetch(`${serverUrl}/api/scans/${scanId}/fail`, {
+  const response = await request(`/api/scans/${scanId}/fail`, {
     method: "POST",
     headers: { "Content-Type": "application/json", "x-agent-token": agentToken },
     body: JSON.stringify({ message, platform: process.platform }),
@@ -194,15 +203,26 @@ async function markScanFailed(scanId, message) {
   }
 }
 
-try {
-  while (true) {
+function describeError(error) {
+  if (!(error instanceof Error)) return "Unknown agent error"
+  if (error.cause?.code === "UND_ERR_CONNECT_TIMEOUT") {
+    return `Cannot reach ${serverUrl}. Connection timed out. Verify the Windows server IP, port, and firewall settings.`
+  }
+  if (error.cause?.code === "ECONNREFUSED") {
+    return `Connection refused by ${serverUrl}. Make sure the AetherScan web app is running and reachable from Kali.`
+  }
+  return error.message
+}
+
+while (true) {
+  try {
     await heartbeat("online")
     const { job } = await fetchJob()
 
     if (!job) {
       console.log("No pending scan job")
       if (once) break
-      await sleep(5000)
+      await sleep(POLL_INTERVAL_MS)
       continue
     }
 
@@ -214,20 +234,26 @@ try {
       const result = await submitScan(job.id, assets, Math.max(1, Math.round((Date.now() - startedAt) / 1000)), summary)
       console.log(JSON.stringify(result, null, 2))
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown scan failure"
+      const message = describeError(error)
       console.error(message)
       await heartbeat("degraded").catch(() => null)
       await markScanFailed(job.id, message).catch((markError) => {
-        const markMessage = markError instanceof Error ? markError.message : "Unknown fail-route error"
-        console.error(markMessage)
+        console.error(describeError(markError))
       })
       if (once) throw error
     }
+  } catch (error) {
+    const message = describeError(error)
+    console.error(message)
+    if (once) throw error
+    await sleep(POLL_INTERVAL_MS)
+    continue
+  }
 
-    if (once) break
-  }
-} finally {
-  if (once) {
-    await heartbeat("offline").catch(() => null)
-  }
+  if (once) break
 }
+
+if (once) {
+  await heartbeat("offline").catch(() => null)
+}
+

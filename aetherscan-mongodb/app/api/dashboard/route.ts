@@ -2,6 +2,17 @@ import { NextResponse } from "next/server"
 import { requireUser } from "@/lib/aetherscan/auth"
 import { readDatabase } from "@/lib/aetherscan/store"
 
+function isFindingAlert(title: string, message: string, category?: string) {
+  const lowerTitle = title.toLowerCase()
+  const lowerMessage = message.toLowerCase()
+  if (category === "finding-high" || category === "finding-medium") return true
+  return lowerTitle.startsWith("high risk detected") ||
+    lowerTitle.startsWith("medium risk detected") ||
+    lowerTitle.startsWith("high finding:") ||
+    lowerTitle.startsWith("medium finding:") ||
+    lowerMessage.includes("detected on asset")
+}
+
 export async function GET(request: Request) {
   const auth = await requireUser(request)
   if (!auth.user) return auth.response
@@ -10,11 +21,38 @@ export async function GET(request: Request) {
   const openFindings = database.findings.filter((finding) => finding.status !== "resolved")
   const openFindingIds = new Set(openFindings.map((finding) => finding.id))
   const activeAgents = database.agents.filter((agent) => agent.status === "online" || agent.status === "occupied")
-  const visibleAlerts = database.alerts.filter((alert) => {
-    if (alert.findingId) return openFindingIds.has(alert.findingId)
-    if (alert.category === "finding-high" || alert.category === "finding-medium") return false
-    return true
-  })
+  const visibleAlerts = [] as typeof database.alerts
+  const seenOfflineAgents = new Set<string>()
+
+  for (const alert of database.alerts) {
+    const alertTitle = alert.title.toLowerCase()
+    const alertMessage = alert.message.toLowerCase()
+
+    if (alertTitle.startsWith("agent offline:")) {
+      const agentName = alert.title.slice("Agent offline:".length).trim().toLowerCase()
+      if (seenOfflineAgents.has(agentName)) continue
+      seenOfflineAgents.add(agentName)
+    }
+
+    if (isFindingAlert(alert.title, alert.message, alert.category)) {
+      const matchesOpenFinding = alert.findingId
+        ? openFindingIds.has(alert.findingId)
+        : openFindings.some((finding) => {
+            const findingTitle = finding.title.toLowerCase()
+            const findingCve = finding.cve?.toLowerCase()
+            const servicePort = `${finding.service}/${finding.port}`.toLowerCase()
+            return alertTitle.includes(findingTitle) ||
+              alertMessage.includes(findingTitle) ||
+              (findingCve ? alertTitle.includes(findingCve) || alertMessage.includes(findingCve) : false) ||
+              alertMessage.includes(servicePort)
+          })
+
+      if (!matchesOpenFinding) continue
+    }
+
+    visibleAlerts.push(alert)
+    if (visibleAlerts.length >= 6) break
+  }
 
   return NextResponse.json({
     stats: {
@@ -30,7 +68,7 @@ export async function GET(request: Request) {
       low: openFindings.filter((finding) => finding.riskLevel === "low").length,
     },
     recentScans: database.scans.slice(-5).reverse(),
-    alerts: visibleAlerts.slice(-6).reverse(),
+    alerts: visibleAlerts,
     agents: database.agents.map(({ authToken: _authToken, ...agent }) => agent),
   })
 }

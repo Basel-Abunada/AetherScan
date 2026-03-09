@@ -29,6 +29,18 @@ export function NotificationCenter() {
           if (seenAlertIds.current.has(alert.id)) continue
           seenAlertIds.current.add(alert.id)
 
+          if (alert.category === "scan-completed") {
+            toast.success("Scan completed. Please check the results.", {
+              description: alert.message,
+              duration: 10000,
+              action: {
+                label: "View results",
+                onClick: () => window.location.assign("/dashboard/results"),
+              },
+            })
+            continue
+          }
+
           const options = {
             description: alert.message,
             duration: alert.severity === "high" ? 12000 : 7000,
