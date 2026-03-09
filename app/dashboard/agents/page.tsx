@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Server, Wifi, WifiOff, RefreshCw, Plus, Pencil, Trash2 } from "lucide-react"
+import { Server, Wifi, WifiOff, RefreshCw, Plus, Pencil, Trash2, Radar } from "lucide-react"
 import type { Agent, ScanResult } from "@/lib/aetherscan/types"
 import { deleteAgent, fetchAgents, fetchScans, formatDateTime, registerAgent, timeAgo, updateAgent } from "@/lib/aetherscan-client"
 
@@ -59,7 +59,8 @@ export default function AgentsPage() {
   }, [])
 
   const onlineCount = agents.filter((agent) => agent.status === "online").length
-  const offlineCount = agents.length - onlineCount
+  const occupiedCount = agents.filter((agent) => agent.status === "occupied").length
+  const offlineCount = agents.filter((agent) => agent.status === "offline").length
   const statsByAgent = useMemo(
     () => Object.fromEntries(agents.map((agent) => [agent.id, scans.filter((scan) => scan.agentId === agent.id)])),
     [agents, scans],
@@ -68,6 +69,20 @@ export default function AgentsPage() {
   const agentLaunchCommand = createdAgent?.authToken
     ? `export AETHERSCAN_SERVER_URL="http://YOUR_SERVER_IP:3000"\nexport AETHERSCAN_AGENT_TOKEN="${createdAgent.authToken}"\nexport AETHERSCAN_ONCE=false\nnode ./scripts/aetherscan-agent.mjs`
     : ""
+
+  const badgeClassName = (status: Agent["status"]) => {
+    if (status === "online") return "border-green-200 bg-green-100 text-green-700"
+    if (status === "occupied") return "border-blue-200 bg-blue-100 text-blue-700"
+    if (status === "degraded") return "border-amber-200 bg-amber-100 text-amber-700"
+    return ""
+  }
+
+  const iconClassName = (status: Agent["status"]) => {
+    if (status === "online") return "bg-green-100 text-green-600"
+    if (status === "occupied") return "bg-blue-100 text-blue-600"
+    if (status === "degraded") return "bg-amber-100 text-amber-600"
+    return "bg-muted text-muted-foreground"
+  }
 
   const openEditDialog = (agent: Agent) => {
     setEditingAgent(agent)
@@ -95,7 +110,13 @@ export default function AgentsPage() {
             <RefreshCw className="mr-2 size-4" />
             Refresh
           </Button>
-          <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <Dialog
+            open={isCreateDialogOpen}
+            onOpenChange={(open) => {
+              setIsCreateDialogOpen(open)
+              if (!open) setCreatedAgent(null)
+            }}
+          >
             <DialogTrigger asChild>
               <Button>
                 <Plus className="mr-2 size-4" />
@@ -155,7 +176,6 @@ export default function AgentsPage() {
                     try {
                       const agent = await registerAgent(form)
                       setCreatedAgent(agent)
-                      setForm(emptyForm)
                       await loadData()
                     } catch (err) {
                       setError(err instanceof Error ? err.message : "Failed to register agent")
@@ -254,7 +274,17 @@ export default function AgentsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{onlineCount}</div>
-            <p className="text-xs text-muted-foreground">Actively reporting</p>
+            <p className="text-xs text-muted-foreground">Ready for polling</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">Occupied</CardTitle>
+            <Radar className="size-4 text-blue-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-blue-600">{occupiedCount}</div>
+            <p className="text-xs text-muted-foreground">Currently running scans</p>
           </CardContent>
         </Card>
         <Card>
@@ -265,16 +295,6 @@ export default function AgentsPage() {
           <CardContent>
             <div className="text-2xl font-bold">{offlineCount}</div>
             <p className="text-xs text-muted-foreground">No recent heartbeat</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Total Scans</CardTitle>
-            <RefreshCw className="size-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{scans.length}</div>
-            <p className="text-xs text-muted-foreground">Completed or queued jobs</p>
           </CardContent>
         </Card>
       </div>
@@ -289,7 +309,7 @@ export default function AgentsPage() {
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
-                    <div className={`rounded-md p-2 ${agent.status === "online" ? "bg-green-100 text-green-600" : "bg-muted text-muted-foreground"}`}>
+                    <div className={`rounded-md p-2 ${iconClassName(agent.status)}`}>
                       <Server className="size-5" />
                     </div>
                     <div>
@@ -329,7 +349,7 @@ export default function AgentsPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between text-sm">
                     <span className="text-muted-foreground">Status</span>
-                    <Badge variant={agent.status === "online" ? "secondary" : "outline"} className={agent.status === "online" ? "border-green-200 bg-green-100 text-green-700" : ""}>
+                    <Badge variant="outline" className={badgeClassName(agent.status)}>
                       {agent.status}
                     </Badge>
                   </div>

@@ -19,7 +19,7 @@ export async function PATCH(request: Request, { params }: Params) {
     if (body.platform !== undefined) candidate.platform = String(body.platform)
     if (body.description !== undefined) candidate.description = String(body.description)
     if (body.targetHint !== undefined) candidate.targetHint = body.targetHint ? String(body.targetHint) : undefined
-    if (body.status && ["online", "offline", "degraded"].includes(body.status)) candidate.status = body.status
+    if (body.status && ["online", "offline", "degraded", "occupied"].includes(body.status)) candidate.status = body.status
     const { authToken: _authToken, ...safeAgent } = candidate
     return safeAgent
   })

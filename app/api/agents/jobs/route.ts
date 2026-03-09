@@ -1,8 +1,8 @@
-﻿import { NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { requireAgent } from "@/lib/aetherscan/auth"
 import { createQueuedScan, markScanRunning } from "@/lib/aetherscan/scan-service"
 import { updateDatabase } from "@/lib/aetherscan/store"
-import { addHours } from "@/lib/aetherscan/utils"
+import { addHours, nowIso } from "@/lib/aetherscan/utils"
 
 function nextRunDate(current: string, frequency: string) {
   const base = new Date(current)
@@ -23,9 +23,14 @@ export async function GET(request: Request) {
   if (!auth.agent) return auth.response
 
   const job = await updateDatabase((database) => {
+    const agent = database.agents.find((entry) => entry.id === auth.agent?.id)
+    if (!agent) return null
+
     const queued = database.scans.find((scan) => scan.agentId === auth.agent?.id && scan.status === "queued")
     if (queued) {
       markScanRunning(database, queued.id)
+      agent.status = "occupied"
+      agent.lastSeenAt = nowIso()
       return queued
     }
 
@@ -47,6 +52,8 @@ export async function GET(request: Request) {
     dueSchedule.lastRunAt = queuedFromSchedule.startedAt
     dueSchedule.nextRunAt = nextRunDate(dueSchedule.nextRunAt, dueSchedule.frequency)
     markScanRunning(database, queuedFromSchedule.id)
+    agent.status = "occupied"
+    agent.lastSeenAt = nowIso()
     return queuedFromSchedule
   })
 

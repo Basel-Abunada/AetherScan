@@ -1,6 +1,6 @@
 export type UserRole = "admin" | "engineer" | "technician"
 export type UserStatus = "active" | "inactive"
-export type AgentStatus = "online" | "offline" | "degraded"
+export type AgentStatus = "online" | "offline" | "degraded" | "occupied"
 export type ScheduleStatus = "active" | "paused" | "disabled"
 export type ScanStatus = "queued" | "running" | "completed" | "failed"
 export type RiskLevel = "high" | "medium" | "low"

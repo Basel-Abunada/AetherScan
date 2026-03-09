@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import {
   LayoutDashboard,
@@ -14,6 +14,7 @@ import {
   ChevronDown,
   Server,
 } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import {
@@ -90,8 +91,8 @@ export function AppSidebar({ userRole = "admin", userName = "Basel Abunada" }: A
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <Link href="/dashboard">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
-                  <Shield className="size-4" />
+                <div className="flex aspect-square size-8 items-center justify-center overflow-hidden rounded-lg bg-sidebar-primary text-sidebar-primary-foreground">
+                  <Image src="/aetherscan-mark.svg" alt="AetherScan logo" width={32} height={32} className="size-8" priority />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
                   <span className="font-semibold">AetherScan</span>

@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { requireUser } from "@/lib/aetherscan/auth"
 import { readDatabase } from "@/lib/aetherscan/store"
 
@@ -8,13 +8,14 @@ export async function GET(request: Request) {
 
   const database = await readDatabase()
   const openFindings = database.findings.filter((finding) => finding.status !== "resolved")
+  const activeAgents = database.agents.filter((agent) => agent.status === "online" || agent.status === "occupied")
 
   return NextResponse.json({
     stats: {
       assets: database.assets.length,
       vulnerabilities: openFindings.length,
       highRisk: openFindings.filter((finding) => finding.riskLevel === "high").length,
-      activeAgents: database.agents.filter((agent) => agent.status === "online").length,
+      activeAgents: activeAgents.length,
       totalAgents: database.agents.length,
     },
     riskDistribution: {

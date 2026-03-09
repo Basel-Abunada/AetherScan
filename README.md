@@ -1,4 +1,4 @@
-﻿# AetherScan Prototype
+# AetherScan Prototype
 
 This workspace contains a thesis-aligned working prototype of AetherScan inside the existing Next.js app.
 
@@ -15,11 +15,9 @@ This workspace contains a thesis-aligned working prototype of AetherScan inside 
 - Dashboard aggregation
 - CSV and PDF report generation
 
-## Local user accounts
+## Credentials
 
-- `admin@aetherscan.local` / `Admin123!`
-- `engineer@aetherscan.local` / `Engineer123!`
-- `tech@aetherscan.local` / `Tech123!`
+Seeded local accounts are documented in [CREDENTIALS.md](C:\Users\abase\OneDrive\Desktop\AetherScan\CREDENTIALS.md).
 
 ## Agent flow
 

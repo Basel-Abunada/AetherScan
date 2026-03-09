@@ -1,4 +1,4 @@
-﻿import { NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { requireAgent } from "@/lib/aetherscan/auth"
 import { updateDatabase } from "@/lib/aetherscan/store"
 import { nowIso } from "@/lib/aetherscan/utils"
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     const candidate = database.agents.find((entry) => entry.id === auth.agent?.id)
     if (!candidate) return null
     candidate.lastSeenAt = nowIso()
-    candidate.status = body.status && ["online", "offline", "degraded"].includes(body.status) ? body.status : "online"
+    candidate.status = body.status && ["online", "offline", "degraded", "occupied"].includes(body.status) ? body.status : "online"
     if (body.ipAddress) candidate.ipAddress = String(body.ipAddress)
     if (body.platform) candidate.platform = String(body.platform)
     return candidate

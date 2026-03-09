@@ -12,6 +12,7 @@ const legacyEmailSuffix = ["@aetherscan", "de", "mo"].join(".")
 const legacyTargetNames = ["hq", "lab", "branch"].map((segment) => ["de", "mo", segment].join("-"))
 const legacyAgentNames = [["Agent", "HQ", "Main"], ["Agent", "Branch", "01"], ["Agent", "Lab", "Test"]].map((parts) => parts.join("-"))
 const OFFLINE_AFTER_MS = 15_000
+const OCCUPIED_OFFLINE_AFTER_MS = 20 * 60 * 1000
 
 function withDefaults(database: AetherScanDatabase): AetherScanDatabase {
   database.settings ??= createDefaultSettings()
@@ -70,8 +71,10 @@ async function applyRuntimeState(database: AetherScanDatabase) {
   database.sessions = database.sessions.filter((session) => new Date(session.expiresAt).getTime() > Date.now())
 
   for (const agent of database.agents) {
-    const shouldBeOffline = Date.now() - new Date(agent.lastSeenAt).getTime() > OFFLINE_AFTER_MS
-    if (shouldBeOffline && agent.status === "online") {
+    const lastSeenDelta = Date.now() - new Date(agent.lastSeenAt).getTime()
+    const timeout = agent.status === "occupied" ? OCCUPIED_OFFLINE_AFTER_MS : OFFLINE_AFTER_MS
+    const shouldBeOffline = lastSeenDelta > timeout
+    if (shouldBeOffline && agent.status !== "offline") {
       agent.status = "offline"
       changed = true
       offlineAgents.push(agent)
