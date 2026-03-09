@@ -133,7 +133,7 @@ export default function UsersPage() {
                         <DropdownMenuContent align="end">
                           <DropdownMenuItem onClick={async () => { await updateUser(user.id, { status: user.status === "active" ? "inactive" : "active" }); await loadUsers() }}>{user.status === "active" ? "Deactivate" : "Activate"}</DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-destructive" onClick={async () => { await deleteUser(user.id); await loadUsers() }}><Trash2 className="mr-2 size-4" />Delete User</DropdownMenuItem>
+                          <DropdownMenuItem className="text-destructive" onClick={async () => { if (!window.confirm(`Are you sure you want to delete the user "${user.name}"?`)) return; await deleteUser(user.id); await loadUsers() }}><Trash2 className="mr-2 size-4" />Delete User</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </TableCell>
@@ -147,3 +147,4 @@ export default function UsersPage() {
     </div>
   )
 }
+

@@ -328,6 +328,7 @@ export default function AgentsPage() {
                       onClick={async () => {
                         setError("")
                         try {
+                          if (!window.confirm(`Are you sure you want to delete the agent "${agent.name}"?`)) return
                           await deleteAgent(agent.id)
                           if (editingAgent?.id === agent.id) {
                             setEditingAgent(null)
@@ -388,3 +389,5 @@ export default function AgentsPage() {
     </div>
   )
 }
+
+

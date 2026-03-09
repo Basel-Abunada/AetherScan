@@ -93,6 +93,7 @@ export async function updateFinding(id: string, status: string) { return apiRequ
 export async function deleteFinding(id: string) { return apiRequest<{ ok: boolean }>(`/api/vulnerabilities/${id}`, { method: "DELETE" }) }
 export async function fetchAssets() { return apiRequest<Asset[]>("/api/assets") }
 export async function fetchReports() { return apiRequest<ReportRecord[]>("/api/reports") }
+export async function deleteReport(id: string) { return apiRequest<{ ok: boolean }>(`/api/reports/${id}`, { method: "DELETE" }) }
 export async function fetchSettings() { return apiRequest<{ profile: { name: string; email: string; role: string; department: string; theme: string; language: string; timezone: string }; notifications: { emailEnabled: boolean; highRiskAlerts: boolean; scanCompletion: boolean; agentOffline: boolean; weeklySummary: boolean; alertEmail: string; ccEmail: string }; email: { host: string; port: number; secure: boolean; username: string; password: string; from: string }; system: { defaultScanType: string; autoGenerateReports: boolean; dataRetentionDays: number } }>("/api/settings") }
 export async function updateSettings(payload: Record<string, unknown>) { return apiRequest("/api/settings", { method: "PATCH", body: JSON.stringify(payload) }) }
 export async function sendTestEmail() { return apiRequest<{ ok: boolean }>("/api/settings/test-email", { method: "POST" }) }

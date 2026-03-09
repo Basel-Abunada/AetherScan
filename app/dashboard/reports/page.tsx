@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Label } from "@/components/ui/label"
 import { FileText, Download, Plus, Calendar, Trash2, FileSpreadsheet, File } from "lucide-react"
-import { downloadReport, fetchReports, loadSession } from "@/lib/aetherscan-client"
+import { deleteReport, downloadReport, fetchReports, formatDateTime, loadSession } from "@/lib/aetherscan-client"
 
 type Report = Awaited<ReturnType<typeof fetchReports>>[number]
 
@@ -25,6 +25,8 @@ export default function ReportsPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [type, setType] = useState("executive")
   const [format, setFormat] = useState<"pdf" | "csv">("pdf")
+  const role = loadSession()?.user.role
+  const canDelete = role === "admin"
 
   const loadReports = async () => setReports(await fetchReports())
   useEffect(() => { void loadReports() }, [])
@@ -84,10 +86,10 @@ export default function ReportsPage() {
                   <TableCell className="font-medium">{report.name}</TableCell>
                   <TableCell><Badge variant="outline" className={typeConfig[report.type].color}>{typeConfig[report.type].label}</Badge></TableCell>
                   <TableCell><div className="flex items-center gap-2">{report.format === "pdf" ? <File className="size-4 text-red-500" /> : <FileSpreadsheet className="size-4 text-green-500" />}{report.format.toUpperCase()}</div></TableCell>
-                  <TableCell className="text-muted-foreground">{report.generatedAt}</TableCell>
+                  <TableCell className="text-muted-foreground">{formatDateTime(report.generatedAt)}</TableCell>
                   <TableCell className="text-muted-foreground">{report.generatedBy}</TableCell>
                   <TableCell className="text-muted-foreground">{Math.max(1, Math.round(report.sizeBytes / 1024))} KB</TableCell>
-                  <TableCell className="text-right"><div className="flex items-center justify-end gap-2"><Button variant="ghost" size="icon" className="size-8" onClick={() => generate(report.type, report.format)}><Download className="size-4" /></Button><Button variant="ghost" size="icon" className="size-8 text-muted-foreground"><Trash2 className="size-4" /></Button></div></TableCell>
+                  <TableCell className="text-right"><div className="flex items-center justify-end gap-2"><Button variant="ghost" size="icon" className="size-8" onClick={() => generate(report.type, report.format)}><Download className="size-4" /></Button>{canDelete ? <Button variant="ghost" size="icon" className="size-8 text-destructive" onClick={async () => { if (!window.confirm(`Are you sure you want to delete the report \"${report.name}\"?`)) return; await deleteReport(report.id); await loadReports() }}><Trash2 className="size-4" /></Button> : null}</div></TableCell>
                 </TableRow>
               ))}
             </TableBody>

@@ -132,7 +132,7 @@ export default function VulnerabilitiesPage() {
                         Remediate
                       </Button>
                       {canDelete ? (
-                        <Button variant="destructive" size="sm" onClick={async () => { await deleteFinding(vuln.id); await loadData() }}>
+                        <Button variant="destructive" size="sm" onClick={async () => { if (!window.confirm(`Are you sure you want to delete the finding "${vuln.title}"?`)) return; await deleteFinding(vuln.id); await loadData() }}>
                           <Trash2 className="mr-2 size-4" />
                           Delete
                         </Button>
@@ -183,3 +183,4 @@ export default function VulnerabilitiesPage() {
     </div>
   )
 }
+

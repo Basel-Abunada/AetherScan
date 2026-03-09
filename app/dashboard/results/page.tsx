@@ -147,7 +147,7 @@ export default function ScanResultsPage() {
                           Export to CSV
                         </DropdownMenuItem>
                         {canDelete ? (
-                          <DropdownMenuItem className="text-destructive" onClick={async () => { await deleteScanResult(result.id); await loadResults() }}>
+                          <DropdownMenuItem className="text-destructive" onClick={async () => { if (!window.confirm(`Are you sure you want to delete scan result "${result.id}"?`)) return; await deleteScanResult(result.id); await loadResults() }}>
                             <Trash2 className="mr-2 size-4" />
                             Delete Scan Result
                           </DropdownMenuItem>
@@ -164,3 +164,4 @@ export default function ScanResultsPage() {
     </div>
   )
 }
+

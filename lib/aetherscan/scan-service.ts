@@ -1,6 +1,6 @@
 import type { Asset, AetherScanDatabase, ScanMode, ScanResult, ScanType } from "@/lib/aetherscan/types"
 import { buildFindingsForAssets, summarizeFindings } from "@/lib/aetherscan/risk-engine"
-import { makeId, nowIso } from "@/lib/aetherscan/utils"
+import { makeId, normalizeScanTarget, nowIso } from "@/lib/aetherscan/utils"
 
 export function createQueuedScan(database: AetherScanDatabase, input: {
   agentId: string
@@ -13,7 +13,7 @@ export function createQueuedScan(database: AetherScanDatabase, input: {
     id: makeId("scan"),
     agentId: input.agentId,
     agentName: input.agentName,
-    target: input.target,
+    target: normalizeScanTarget(input.target),
     scanType: input.scanType,
     mode: input.mode,
     status: "queued",
