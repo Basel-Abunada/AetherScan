@@ -66,3 +66,4 @@ export async function ensureMongoCollections() {
 
   await global.__aetherscanMongoInitPromise
 }
+
