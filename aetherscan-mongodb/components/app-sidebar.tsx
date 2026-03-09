@@ -13,6 +13,7 @@ import {
   LogOut,
   ChevronDown,
   Server,
+  Bell,
 } from "lucide-react"
 import Image from "next/image"
 import Link from "next/link"
@@ -26,6 +27,7 @@ import {
   SidebarGroupLabel,
   SidebarHeader,
   SidebarMenu,
+  SidebarMenuBadge,
   SidebarMenuButton,
   SidebarMenuItem,
   SidebarSeparator,
@@ -59,9 +61,10 @@ const secondaryNavItems = [
 interface AppSidebarProps {
   userRole?: "admin" | "engineer" | "technician"
   userName?: string
+  alertCount?: number
 }
 
-export function AppSidebar({ userRole = "admin", userName = "Basel Abunada" }: AppSidebarProps) {
+export function AppSidebar({ userRole = "admin", userName = "Basel Abunada", alertCount = 0 }: AppSidebarProps) {
   const pathname = usePathname()
   const router = useRouter()
 
@@ -117,6 +120,7 @@ export function AppSidebar({ userRole = "admin", userName = "Basel Abunada" }: A
                       <span>{item.title}</span>
                     </Link>
                   </SidebarMenuButton>
+                  {item.href === "/dashboard" && alertCount > 0 ? <SidebarMenuBadge>{alertCount}</SidebarMenuBadge> : null}
                 </SidebarMenuItem>
               ))}
             </SidebarMenu>
@@ -139,6 +143,25 @@ export function AppSidebar({ userRole = "admin", userName = "Basel Abunada" }: A
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
+            </SidebarMenu>
+          </SidebarGroupContent>
+        </SidebarGroup>
+
+        <SidebarSeparator />
+
+        <SidebarGroup>
+          <SidebarGroupLabel>Notifications</SidebarGroupLabel>
+          <SidebarGroupContent>
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={pathname === "/dashboard"} tooltip="Recent alerts">
+                  <Link href="/dashboard">
+                    <Bell className="size-4" />
+                    <span>Recent Alerts</span>
+                  </Link>
+                </SidebarMenuButton>
+                {alertCount > 0 ? <SidebarMenuBadge>{alertCount}</SidebarMenuBadge> : null}
+              </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>

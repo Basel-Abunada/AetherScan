@@ -60,6 +60,32 @@ export async function POST(request: Request) {
 
     if (!result?.scan) return null
 
+    database.alerts.unshift({
+      id: makeId("alert"),
+      severity: "low",
+      title: `Scan completed: ${result.scan.target}`,
+      message: `Agent ${auth.agent?.name ?? "Unknown agent"} completed the ${result.scan.scanType} scan for ${result.scan.target}.`,
+      createdAt: nowIso(),
+      acknowledged: false,
+      category: "scan-completed",
+      scanId: result.scan.id,
+    })
+
+    for (const finding of result.findings.filter((entry) => entry.riskLevel === "high" || entry.riskLevel === "medium")) {
+      database.alerts.unshift({
+        id: makeId("alert"),
+        severity: finding.riskLevel,
+        title: `${finding.riskLevel === "high" ? "High" : "Medium"} finding: ${finding.title}`,
+        message: `${finding.title} detected on ${finding.service}/${finding.port}${finding.cve ? ` (${finding.cve})` : ""}.`,
+        createdAt: nowIso(),
+        acknowledged: false,
+        category: finding.riskLevel === "high" ? "finding-high" : "finding-medium",
+        scanId: result.scan.id,
+        findingId: finding.id,
+        assetId: finding.assetId,
+      })
+    }
+
     if (database.settings.system.autoGenerateReports) {
       const generatedAt = nowIso()
       const reportId = makeId("report")
@@ -85,6 +111,7 @@ export async function POST(request: Request) {
     return {
       scan: result.scan,
       highRiskCount: result.vulnerabilities.high,
+      mediumRiskCount: result.vulnerabilities.medium,
       database,
     }
   })
@@ -94,7 +121,7 @@ export async function POST(request: Request) {
   if (completion.database.settings.notifications.scanCompletion) {
     await sendNotificationEmail(completion.database, {
       subject: `AetherScan scan completed: ${completion.scan.target}`,
-      text: `Scan ${completion.scan.id} completed successfully. Hosts detected: ${completion.scan.totalHosts}. High risk findings: ${completion.highRiskCount}.`,
+      text: `Scan ${completion.scan.id} completed successfully. Hosts detected: ${completion.scan.totalHosts}. High risk findings: ${completion.highRiskCount}. Medium risk findings: ${completion.mediumRiskCount}.`,
     }).catch(() => null)
   }
 

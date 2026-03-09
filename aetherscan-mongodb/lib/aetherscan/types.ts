@@ -10,6 +10,7 @@ export type ReportType = "scan" | "vulnerability" | "asset" | "executive"
 export type ScanType = "quick" | "standard" | "full" | "vuln"
 export type ScanMode = "live"
 export type DeviceType = "server" | "workstation" | "laptop" | "printer" | "router" | "mobile" | "switch" | "iot" | "unknown"
+export type AlertCategory = "scan-queued" | "scan-started" | "scan-completed" | "finding-high" | "finding-medium" | "system"
 
 export interface User {
   id: string
@@ -111,6 +112,10 @@ export interface Alert {
   message: string
   createdAt: string
   acknowledged: boolean
+  category?: AlertCategory
+  scanId?: string
+  findingId?: string
+  assetId?: string
 }
 
 export interface ScanResult {

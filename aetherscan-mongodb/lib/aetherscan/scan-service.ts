@@ -57,17 +57,6 @@ export function finalizeScan(database: AetherScanDatabase, input: { scanId: stri
   scan.vulnerabilities = vulnerabilities
   scan.summary = input.summary ?? `Detected ${findings.length} findings across ${input.assets.length} hosts`
 
-  for (const finding of findings.filter((entry) => entry.riskLevel === "high")) {
-    database.alerts.push({
-      id: makeId("alert"),
-      severity: "high",
-      title: `High risk detected on ${finding.service}`,
-      message: `${finding.title} detected on asset ${finding.assetId}`,
-      createdAt: completedAt,
-      acknowledged: false,
-    })
-  }
-
   return { scan, findings, vulnerabilities }
 }
 

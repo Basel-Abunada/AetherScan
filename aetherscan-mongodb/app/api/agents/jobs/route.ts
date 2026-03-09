@@ -2,7 +2,7 @@ import { NextResponse } from "next/server"
 import { requireAgent } from "@/lib/aetherscan/auth"
 import { createQueuedScan, markScanRunning } from "@/lib/aetherscan/scan-service"
 import { updateDatabase } from "@/lib/aetherscan/store"
-import { addHours, nowIso } from "@/lib/aetherscan/utils"
+import { addHours, makeId, nowIso } from "@/lib/aetherscan/utils"
 
 function nextRunDate(current: string, frequency: string) {
   const base = new Date(current)
@@ -31,6 +31,16 @@ export async function GET(request: Request) {
       markScanRunning(database, queued.id)
       agent.status = "occupied"
       agent.lastSeenAt = nowIso()
+      database.alerts.unshift({
+        id: makeId("alert"),
+        severity: "low",
+        title: `Scan started: ${queued.target}`,
+        message: `Agent ${agent.name} started the ${queued.scanType} scan for ${queued.target}.`,
+        createdAt: nowIso(),
+        acknowledged: false,
+        category: "scan-started",
+        scanId: queued.id,
+      })
       return queued
     }
 
@@ -54,6 +64,28 @@ export async function GET(request: Request) {
     markScanRunning(database, queuedFromSchedule.id)
     agent.status = "occupied"
     agent.lastSeenAt = nowIso()
+    database.alerts.unshift(
+      {
+        id: makeId("alert"),
+        severity: "low",
+        title: `Scan queued: ${queuedFromSchedule.target}`,
+        message: `Scheduled scan ${dueSchedule.name} queued a ${queuedFromSchedule.scanType} run on agent ${agent.name}.`,
+        createdAt: nowIso(),
+        acknowledged: false,
+        category: "scan-queued",
+        scanId: queuedFromSchedule.id,
+      },
+      {
+        id: makeId("alert"),
+        severity: "low",
+        title: `Scan started: ${queuedFromSchedule.target}`,
+        message: `Agent ${agent.name} started the scheduled ${queuedFromSchedule.scanType} scan for ${queuedFromSchedule.target}.`,
+        createdAt: nowIso(),
+        acknowledged: false,
+        category: "scan-started",
+        scanId: queuedFromSchedule.id,
+      },
+    )
     return queuedFromSchedule
   })
 

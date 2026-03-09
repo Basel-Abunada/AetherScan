@@ -1,7 +1,8 @@
-﻿import { NextResponse } from "next/server"
+import { NextResponse } from "next/server"
 import { requireUserRole } from "@/lib/aetherscan/auth"
 import { createQueuedScan } from "@/lib/aetherscan/scan-service"
 import { updateDatabase } from "@/lib/aetherscan/store"
+import { makeId, nowIso } from "@/lib/aetherscan/utils"
 
 export async function POST(request: Request) {
   const auth = await requireUserRole(request, ["admin", "engineer", "technician"])
@@ -20,13 +21,26 @@ export async function POST(request: Request) {
   const queuedScan = await updateDatabase((database) => {
     const agent = database.agents.find((entry) => entry.id === agentId)
     if (!agent) return null
-    return createQueuedScan(database, {
+    const scan = createQueuedScan(database, {
       agentId,
       agentName: agent.name,
       target,
       scanType,
       mode,
     })
+
+    database.alerts.unshift({
+      id: makeId("alert"),
+      severity: "low",
+      title: `Scan queued: ${scan.target}`,
+      message: `${auth.user?.name ?? "A user"} queued a ${scan.scanType} scan on agent ${agent.name}.`,
+      createdAt: nowIso(),
+      acknowledged: false,
+      category: "scan-queued",
+      scanId: scan.id,
+    })
+
+    return scan
   })
 
   if (!queuedScan) {

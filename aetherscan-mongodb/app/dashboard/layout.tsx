@@ -1,4 +1,4 @@
-﻿"use client"
+"use client"
 
 import { useEffect, useState } from "react"
 import { usePathname, useRouter } from "next/navigation"
@@ -13,7 +13,9 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { loadSession, type ClientSession } from "@/lib/aetherscan-client"
+import { Toaster } from "@/components/ui/sonner"
+import { NotificationCenter } from "@/components/notification-center"
+import { fetchDashboard, loadSession, type ClientSession } from "@/lib/aetherscan-client"
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -34,6 +36,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const currentPageTitle = pageTitles[pathname] || "Dashboard"
   const [session, setSession] = useState<ClientSession | null>(null)
   const [ready, setReady] = useState(false)
+  const [alertCount, setAlertCount] = useState(0)
 
   useEffect(() => {
     const current = loadSession()
@@ -45,13 +48,37 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     setReady(true)
   }, [router])
 
+  useEffect(() => {
+    if (!session) return
+
+    let cancelled = false
+    const loadAlerts = async () => {
+      try {
+        const data = await fetchDashboard()
+        if (!cancelled) setAlertCount(data.alerts.length)
+      } catch {
+        if (!cancelled) setAlertCount(0)
+      }
+    }
+
+    void loadAlerts()
+    const interval = window.setInterval(() => {
+      void loadAlerts()
+    }, 15000)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+    }
+  }, [session])
+
   if (!ready || !session) {
     return <div className="flex min-h-screen items-center justify-center text-sm text-muted-foreground">Loading dashboard...</div>
   }
 
   return (
     <SidebarProvider>
-      <AppSidebar userRole={session.user.role} userName={session.user.name} />
+      <AppSidebar userRole={session.user.role} userName={session.user.name} alertCount={alertCount} />
       <SidebarInset>
         <header className="flex h-14 shrink-0 items-center gap-2 border-b bg-background px-4">
           <SidebarTrigger className="-ml-1" />
@@ -73,6 +100,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </Breadcrumb>
         </header>
         <main className="flex-1 overflow-auto p-4 md:p-6">{children}</main>
+        <NotificationCenter />
+        <Toaster richColors closeButton position="top-right" />
       </SidebarInset>
     </SidebarProvider>
   )

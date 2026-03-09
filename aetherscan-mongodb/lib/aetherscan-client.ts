@@ -1,4 +1,4 @@
-import type { Agent, Asset, ReportRecord, RiskFinding, ScanResult, ScanSchedule, Session, User } from "@/lib/aetherscan/types"
+import type { Agent, Alert, Asset, ReportRecord, RiskFinding, ScanResult, ScanSchedule, Session, User } from "@/lib/aetherscan/types"
 
 export type ClientSession = {
   token: string
@@ -72,7 +72,7 @@ export function scanTypeLabel(scanType: string) {
 }
 
 export async function login(email: string, password: string) { return apiRequest<ClientSession>("/api/auth/login", { method: "POST", body: JSON.stringify({ email, password }) }) }
-export async function fetchDashboard() { return apiRequest<{ stats: { assets: number; vulnerabilities: number; highRisk: number; activeAgents: number; totalAgents: number }; riskDistribution: { high: number; medium: number; low: number }; recentScans: ScanResult[]; alerts: Array<{ id: string; severity: string; title: string; message: string; createdAt: string }>; agents: Agent[] }>("/api/dashboard") }
+export async function fetchDashboard() { return apiRequest<{ stats: { assets: number; vulnerabilities: number; highRisk: number; activeAgents: number; totalAgents: number }; riskDistribution: { high: number; medium: number; low: number }; recentScans: ScanResult[]; alerts: Alert[]; agents: Agent[] }>("/api/dashboard") }
 export async function fetchUsers() { return apiRequest<Array<Omit<User, "passwordHash">>>("/api/users") }
 export async function createUser(payload: { name: string; email: string; role: string; password: string; department?: string }) { return apiRequest<Omit<User, "passwordHash">>("/api/users", { method: "POST", body: JSON.stringify(payload) }) }
 export async function updateUser(id: string, payload: Partial<Pick<User, "name" | "email" | "role" | "status" | "department">>) { return apiRequest<Omit<User, "passwordHash">>(`/api/users/${id}`, { method: "PATCH", body: JSON.stringify(payload) }) }

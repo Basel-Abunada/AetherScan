@@ -27,9 +27,17 @@ export async function DELETE(request: Request, { params }: Params) {
   const { id } = await params
 
   const removed = await updateDatabase((database) => {
-    const exists = database.findings.some((entry) => entry.id === id)
-    if (!exists) return false
+    const finding = database.findings.find((entry) => entry.id === id)
+    if (!finding) return false
+
     database.findings = database.findings.filter((entry) => entry.id !== id)
+    database.alerts = database.alerts.filter((alert) => {
+      if (alert.findingId === id) return false
+      if (alert.scanId === finding.scanId && alert.assetId === finding.assetId && alert.title.toLowerCase().includes(finding.title.toLowerCase())) return false
+      if (alert.message.toLowerCase().includes(finding.title.toLowerCase()) && alert.message.includes(`${finding.service}/${finding.port}`)) return false
+      return true
+    })
+
     return true
   })
 
