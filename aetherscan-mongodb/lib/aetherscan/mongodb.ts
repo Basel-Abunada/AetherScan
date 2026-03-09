@@ -19,8 +19,8 @@ const collectionIndexes: Array<{ name: string; indexes: IndexDescription[] }> = 
   { name: "alerts", indexes: [{ key: { id: 1 }, unique: true }, { key: { acknowledged: 1 } }, { key: { createdAt: -1 } }] },
   { name: "scans", indexes: [{ key: { id: 1 }, unique: true }, { key: { agentId: 1 } }, { key: { status: 1 } }, { key: { startedAt: -1 } }] },
   { name: "reports", indexes: [{ key: { id: 1 }, unique: true }, { key: { generatedAt: -1 } }, { key: { type: 1 } }] },
-  { name: "settings", indexes: [{ key: { _id: 1 }, unique: true }] },
-  { name: "metadata", indexes: [{ key: { _id: 1 }, unique: true }] },
+  { name: "settings", indexes: [] },
+  { name: "metadata", indexes: [] },
 ]
 
 function getClientPromise() {
@@ -66,4 +66,3 @@ export async function ensureMongoCollections() {
 
   await global.__aetherscanMongoInitPromise
 }
-
