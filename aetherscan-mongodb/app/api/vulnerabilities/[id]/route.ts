@@ -30,11 +30,22 @@ export async function DELETE(request: Request, { params }: Params) {
     const finding = database.findings.find((entry) => entry.id === id)
     if (!finding) return false
 
+    const findingTitle = finding.title.toLowerCase()
+    const findingService = finding.service.toLowerCase()
+    const findingPort = `${finding.port}`
+    const findingCve = finding.cve?.toLowerCase()
+
     database.findings = database.findings.filter((entry) => entry.id !== id)
     database.alerts = database.alerts.filter((alert) => {
+      const alertTitle = alert.title.toLowerCase()
+      const alertMessage = alert.message.toLowerCase()
+      const sameAssetScan = alert.scanId === finding.scanId && alert.assetId === finding.assetId
+      const mentionsTitle = alertTitle.includes(findingTitle) || alertMessage.includes(findingTitle)
+      const mentionsService = alertMessage.includes(`${findingService}/${findingPort}`) || alertMessage.includes(`${findingService} on port ${findingPort}`)
+      const mentionsCve = findingCve ? alertTitle.includes(findingCve) || alertMessage.includes(findingCve) : false
+
       if (alert.findingId === id) return false
-      if (alert.scanId === finding.scanId && alert.assetId === finding.assetId && alert.title.toLowerCase().includes(finding.title.toLowerCase())) return false
-      if (alert.message.toLowerCase().includes(finding.title.toLowerCase()) && alert.message.includes(`${finding.service}/${finding.port}`)) return false
+      if (sameAssetScan && (mentionsTitle || mentionsService || mentionsCve)) return false
       return true
     })
 
@@ -44,3 +55,4 @@ export async function DELETE(request: Request, { params }: Params) {
   if (!removed) return NextResponse.json({ error: "Finding not found" }, { status: 404 })
   return NextResponse.json({ ok: true })
 }
+

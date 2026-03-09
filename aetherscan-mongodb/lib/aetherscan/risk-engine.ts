@@ -86,6 +86,53 @@ function extractCve(output: string) {
   return output.match(/CVE-\d{4}-\d{4,7}/i)?.[0]?.toUpperCase()
 }
 
+function hasPositiveVulnerabilitySignal(output: string) {
+  const lower = output.toLowerCase()
+  return includesAny(lower, [
+    "state: vulnerable",
+    "vulnerable",
+    "vulns",
+    "confirmed",
+    "exploitable",
+    "remote code execution",
+    "authentication bypass",
+    "arbitrary file read",
+    "arbitrary file upload",
+    "sql injection",
+    "command execution",
+    "directory traversal",
+    "information disclosure",
+    "denial of service",
+    "heartbleed",
+    "shellshock",
+    "ms08-067",
+    "ms12-020",
+    "ms17-010",
+    "cve-",
+  ])
+}
+
+function hasNegativeVulnerabilitySignal(output: string) {
+  const lower = output.toLowerCase()
+  return includesAny(lower, [
+    "state: not vulnerable",
+    "not tested",
+    "no vulnerabilities found",
+    "could not",
+    "failed",
+    "error",
+    "timed out",
+    "timeout",
+    "connection refused",
+    "connection reset",
+    "access denied",
+    "login failed",
+    "unable to negotiate",
+    "failed to receive bytes",
+    "no reply",
+  ])
+}
+
 const templates: FindingTemplate[] = [
   {
     title: "Telnet Service Enabled",
@@ -506,6 +553,10 @@ function buildScriptFinding({
   const output = script.output.trim()
   const serviceLabel = port > 0 ? `${service}/${port}` : service
   const knownTemplate = scriptTemplates.find((template) => template.scriptId === script.id)
+  const positiveSignal = hasPositiveVulnerabilitySignal(output)
+  const negativeSignal = hasNegativeVulnerabilitySignal(output)
+
+  if (negativeSignal && !positiveSignal) return null
 
   if (knownTemplate) {
     return {
@@ -528,7 +579,7 @@ function buildScriptFinding({
   }
 
   const genericCve = extractCve(output)
-  const genericTitle = script.id.includes("vuln") || genericCve
+  const genericTitle = positiveSignal || genericCve
     ? `${script.id.replace(/-/g, " ").replace(/\b\w/g, (character) => character.toUpperCase())} Result`
     : null
 
@@ -628,3 +679,4 @@ export function summarizeFindings(findings: RiskFinding[]) {
     { high: 0, medium: 0, low: 0 },
   )
 }
+
