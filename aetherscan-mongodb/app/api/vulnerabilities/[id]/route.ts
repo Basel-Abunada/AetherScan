@@ -43,9 +43,12 @@ export async function DELETE(request: Request, { params }: Params) {
       const mentionsTitle = alertTitle.includes(findingTitle) || alertMessage.includes(findingTitle)
       const mentionsService = alertMessage.includes(`${findingService}/${findingPort}`) || alertMessage.includes(`${findingService} on port ${findingPort}`)
       const mentionsCve = findingCve ? alertTitle.includes(findingCve) || alertMessage.includes(findingCve) : false
+      const mentionsAsset = alert.assetId === finding.assetId || alertMessage.includes(finding.assetId.toLowerCase())
+      const legacyRiskAlert = alertTitle.startsWith("high risk detected") || alertTitle.startsWith("medium risk detected") || alertTitle.startsWith("high finding:") || alertTitle.startsWith("medium finding:")
 
       if (alert.findingId === id) return false
-      if (sameAssetScan && (mentionsTitle || mentionsService || mentionsCve)) return false
+      if (sameAssetScan && (mentionsTitle || mentionsService || mentionsCve || mentionsAsset)) return false
+      if (legacyRiskAlert && mentionsAsset && (mentionsTitle || mentionsService || mentionsCve)) return false
       return true
     })
 
@@ -55,4 +58,5 @@ export async function DELETE(request: Request, { params }: Params) {
   if (!removed) return NextResponse.json({ error: "Finding not found" }, { status: 404 })
   return NextResponse.json({ ok: true })
 }
+
 

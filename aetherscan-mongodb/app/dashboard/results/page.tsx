@@ -12,6 +12,8 @@ import { FileText, MoreHorizontal, Search, Download, Filter, CheckCircle, XCircl
 import type { ScanResult } from "@/lib/aetherscan/types"
 import { deleteScanResult, downloadReport, fetchScans, formatDateTime, loadSession, scanTypeLabel } from "@/lib/aetherscan-client"
 
+const LIVE_REFRESH_MS = 5000
+
 export default function ScanResultsPage() {
   const [results, setResults] = useState<ScanResult[]>([])
   const [searchTerm, setSearchTerm] = useState("")
@@ -23,13 +25,29 @@ export default function ScanResultsPage() {
   const loadResults = async () => {
     try {
       setResults(await fetchScans())
+      setError("")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load scans")
     }
   }
 
   useEffect(() => {
-    void loadResults()
+    let cancelled = false
+
+    const refresh = async () => {
+      if (cancelled) return
+      await loadResults()
+    }
+
+    void refresh()
+    const interval = window.setInterval(() => {
+      void refresh()
+    }, LIVE_REFRESH_MS)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(interval)
+    }
   }, [])
 
   const filteredResults = useMemo(() => results.filter((result) => {
@@ -164,4 +182,3 @@ export default function ScanResultsPage() {
     </div>
   )
 }
-

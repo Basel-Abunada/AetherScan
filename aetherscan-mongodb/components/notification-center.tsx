@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react"
 import { toast } from "sonner"
 import { fetchDashboard } from "@/lib/aetherscan-client"
 
-const POLL_INTERVAL_MS = 15000
+const POLL_INTERVAL_MS = 5000
 
 export function NotificationCenter() {
   const seenAlertIds = useRef<Set<string>>(new Set())

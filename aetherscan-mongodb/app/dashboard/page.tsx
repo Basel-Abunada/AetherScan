@@ -46,7 +46,7 @@ export default function DashboardPage() {
     void loadData(true)
     const interval = window.setInterval(() => {
       void loadData(false)
-    }, 15000)
+    }, 5000)
 
     return () => {
       cancelled = true
@@ -72,7 +72,7 @@ export default function DashboardPage() {
             <CardDescription>Queued scans, started scans, completed scans, and medium/high findings</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {alerts.length ? alerts.map((alert) => (
+            {alerts.length ? alerts.slice(0, 6).map((alert) => (
               <div key={alert.id} className="rounded-lg border p-3">
                 <div className="mb-1 flex items-start justify-between gap-3">
                   <p className="font-medium leading-snug">{alert.title}</p>
@@ -88,6 +88,7 @@ export default function DashboardPage() {
     </div>
   )
 }
+
 
 
 

@@ -44,14 +44,14 @@ export async function GET(request: Request) {
             return alertTitle.includes(findingTitle) ||
               alertMessage.includes(findingTitle) ||
               (findingCve ? alertTitle.includes(findingCve) || alertMessage.includes(findingCve) : false) ||
-              alertMessage.includes(servicePort)
+              alertMessage.includes(servicePort) ||
+              alertMessage.includes(finding.assetId.toLowerCase())
           })
 
       if (!matchesOpenFinding) continue
     }
 
     visibleAlerts.push(alert)
-    if (visibleAlerts.length >= 6) break
   }
 
   return NextResponse.json({

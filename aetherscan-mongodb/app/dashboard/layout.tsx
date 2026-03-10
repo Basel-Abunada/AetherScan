@@ -64,7 +64,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     void loadAlerts()
     const interval = window.setInterval(() => {
       void loadAlerts()
-    }, 15000)
+    }, 5000)
 
     return () => {
       cancelled = true
@@ -106,3 +106,4 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     </SidebarProvider>
   )
 }
+
