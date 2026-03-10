@@ -72,3 +72,4 @@ export async function GET(request: Request) {
     agents: database.agents.map(({ authToken: _authToken, ...agent }) => agent),
   })
 }
+
