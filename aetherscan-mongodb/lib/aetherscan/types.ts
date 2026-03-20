@@ -157,6 +157,7 @@ export interface ReportRecord {
   format: ReportFormat
   generatedAt: string
   generatedBy: string
+  createdByUserId?: string
   sizeBytes: number
   downloadPath: string
 }

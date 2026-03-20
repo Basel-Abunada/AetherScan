@@ -21,6 +21,9 @@ export default function ScanResultsPage() {
   const [error, setError] = useState("")
   const role = loadSession()?.user.role
   const canDelete = role === "admin"
+  const scopeLabel = role === "admin" ? "all completed network scan results" : "your completed network scan results"
+  const exportLabel = role === "admin" ? "Export All Results" : "Export My Results"
+  const tableTitle = role === "admin" ? "All Scan Results" : "My Scan Results"
 
   const loadResults = async () => {
     try {
@@ -55,6 +58,7 @@ export default function ScanResultsPage() {
     const matchesStatus = statusFilter === "all" || result.status === statusFilter
     return matchesSearch && matchesStatus
   }), [results, searchTerm, statusFilter])
+  const tableDescription = `${filteredResults.length} scan${filteredResults.length !== 1 ? "s" : ""} found`
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -74,11 +78,11 @@ export default function ScanResultsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Scan Results</h1>
-          <p className="text-muted-foreground">View and analyze completed network scan results</p>
+          <p className="text-muted-foreground">View and analyze {scopeLabel}</p>
         </div>
         <Button variant="outline" onClick={() => downloadReport({ type: "scan", format: "csv", generatedBy: "Dashboard User" })}>
           <Download className="mr-2 size-4" />
-          Export All Results
+          {exportLabel}
         </Button>
       </div>
 
@@ -109,8 +113,8 @@ export default function ScanResultsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>All Scan Results</CardTitle>
-          <CardDescription>{filteredResults.length} scan{filteredResults.length !== 1 && "s"} found</CardDescription>
+          <CardTitle>{tableTitle}</CardTitle>
+          <CardDescription>{tableDescription}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>

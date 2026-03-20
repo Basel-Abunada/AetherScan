@@ -16,6 +16,7 @@ import {
 import { Toaster } from "@/components/ui/sonner"
 import { NotificationCenter } from "@/components/notification-center"
 import { fetchDashboard, loadSession, type ClientSession } from "@/lib/aetherscan-client"
+import type { UserRole } from "@/lib/aetherscan/types"
 
 const pageTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
@@ -28,6 +29,12 @@ const pageTitles: Record<string, string> = {
   "/dashboard/users": "User Management",
   "/dashboard/settings": "Settings",
   "/dashboard/help": "Help & Support",
+}
+
+const pageAccess: Partial<Record<string, readonly UserRole[]>> = {
+  "/dashboard/scans": ["admin", "engineer"],
+  "/dashboard/agents": ["admin", "engineer"],
+  "/dashboard/users": ["admin"],
 }
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -44,9 +51,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       router.replace("/login")
       return
     }
+
+    const allowedRoles = pageAccess[pathname]
+    if (allowedRoles && !allowedRoles.includes(current.user.role)) {
+      router.replace("/dashboard")
+      return
+    }
+
     setSession(current)
     setReady(true)
-  }, [router])
+  }, [pathname, router])
 
   useEffect(() => {
     if (!session) return

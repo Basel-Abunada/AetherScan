@@ -15,6 +15,8 @@ import { deleteFinding, fetchVulnerabilities, formatDateTime, loadSession, updat
 type FindingRow = Awaited<ReturnType<typeof fetchVulnerabilities>>["findings"][number]
 
 export default function VulnerabilitiesPage() {
+  const role = loadSession()?.user.role
+  const scopeLabel = role === "admin" ? "View and manage detected security vulnerabilities" : "View and manage vulnerabilities discovered from your scans"
   const [searchTerm, setSearchTerm] = useState("")
   const [riskFilter, setRiskFilter] = useState("all")
   const [statusFilter, setStatusFilter] = useState("all")
@@ -22,7 +24,7 @@ export default function VulnerabilitiesPage() {
   const [counts, setCounts] = useState({ total: 0, high: 0, medium: 0, low: 0 })
   const [findings, setFindings] = useState<FindingRow[]>([])
   const [error, setError] = useState("")
-  const canDelete = loadSession()?.user.role === "admin"
+  const canDelete = role === "admin"
 
   const loadData = async () => {
     try {
@@ -56,7 +58,7 @@ export default function VulnerabilitiesPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Vulnerabilities</h1>
-          <p className="text-muted-foreground">View and manage detected security vulnerabilities</p>
+          <p className="text-muted-foreground">{scopeLabel}</p>
         </div>
       </div>
 

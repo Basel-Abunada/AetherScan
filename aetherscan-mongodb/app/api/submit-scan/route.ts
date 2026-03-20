@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { getVisibleAssets, getVisibleFindings, getVisibleScans } from "@/lib/aetherscan/access"
 import { requireAgent } from "@/lib/aetherscan/auth"
 import { sendNotificationEmailToUser } from "@/lib/aetherscan/email"
 import { buildReportContent } from "@/lib/aetherscan/reports"
@@ -106,12 +107,16 @@ export async function POST(request: Request) {
       if (shouldAutoGenerateReport) {
         const generatedAt = nowIso()
         const reportId = makeId("report")
+        const reportScopeUser = scanOwner ?? { id: result.scan.createdByUserId ?? "", role: "technician" as const }
+        const reportScans = result.scan.createdByUserId ? getVisibleScans(database, reportScopeUser) : database.scans
+        const reportFindings = result.scan.createdByUserId ? getVisibleFindings(database, reportScopeUser) : database.findings
+        const reportAssets = result.scan.createdByUserId ? getVisibleAssets(database, reportScopeUser) : database.assets
         const content = buildReportContent({
           type: "scan",
           format: "pdf",
-          scans: database.scans,
-          findings: database.findings,
-          assets: database.assets,
+          scans: reportScans,
+          findings: reportFindings,
+          assets: reportAssets,
         })
         database.reports.push({
           id: reportId,
@@ -120,6 +125,7 @@ export async function POST(request: Request) {
           format: "pdf",
           generatedAt,
           generatedBy: result.scan.createdByUserName ?? auth.agent?.name ?? "Agent",
+          createdByUserId: result.scan.createdByUserId,
           sizeBytes: content.length,
           downloadPath: `/api/reports/${reportId}/download`,
         })

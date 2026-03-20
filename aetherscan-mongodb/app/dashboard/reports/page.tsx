@@ -27,6 +27,9 @@ export default function ReportsPage() {
   const [format, setFormat] = useState<"pdf" | "csv">("pdf")
   const role = loadSession()?.user.role
   const canDelete = role === "admin"
+  const scopeLabel = role === "admin" ? "Generate and download security reports" : "Generate and download your security reports"
+  const generatedTitle = role === "admin" ? "Generated Reports" : "My Generated Reports"
+  const generatedDescription = role === "admin" ? "View generated report metadata" : "View metadata for reports generated from your account"
 
   const loadReports = async () => setReports(await fetchReports())
   useEffect(() => { void loadReports() }, [])
@@ -41,7 +44,7 @@ export default function ReportsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Reports</h1>
-          <p className="text-muted-foreground">Generate and download security reports</p>
+          <p className="text-muted-foreground">{scopeLabel}</p>
         </div>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
           <DialogTrigger asChild><Button><Plus className="mr-2 size-4" />Generate Report</Button></DialogTrigger>
@@ -76,7 +79,7 @@ export default function ReportsPage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Generated Reports</CardTitle><CardDescription>View generated report metadata</CardDescription></CardHeader>
+        <CardHeader><CardTitle>{generatedTitle}</CardTitle><CardDescription>{generatedDescription}</CardDescription></CardHeader>
         <CardContent>
           <Table>
             <TableHeader><TableRow><TableHead>Report Name</TableHead><TableHead>Type</TableHead><TableHead>Format</TableHead><TableHead>Generated</TableHead><TableHead>By</TableHead><TableHead>Size</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>

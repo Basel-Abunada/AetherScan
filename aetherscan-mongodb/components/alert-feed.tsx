@@ -10,6 +10,10 @@ import { timeAgo } from "@/lib/aetherscan-client"
 
 interface AlertFeedProps {
   alerts: Alert[]
+  title?: string
+  description?: string
+  emptyState?: string
+  footerLabel?: string
 }
 
 function alertVisual(alert: Alert) {
@@ -62,7 +66,13 @@ function alertVisual(alert: Alert) {
   }
 }
 
-export function AlertFeed({ alerts }: AlertFeedProps) {
+export function AlertFeed({
+  alerts,
+  title = "Alert Feed",
+  description = "Real-time security alerts and scan notifications",
+  emptyState = "No alerts yet. Queue a scan to start generating notifications.",
+  footerLabel = "View Latest Results",
+}: AlertFeedProps) {
   const visibleAlerts = alerts.slice(0, 8)
 
   return (
@@ -70,9 +80,9 @@ export function AlertFeed({ alerts }: AlertFeedProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <Bell className="size-5" />
-          Alert Feed
+          {title}
         </CardTitle>
-        <CardDescription>Real-time security alerts and scan notifications</CardDescription>
+        <CardDescription>{description}</CardDescription>
       </CardHeader>
       <CardContent className="p-0">
         <ScrollArea className="h-[400px]">
@@ -108,14 +118,14 @@ export function AlertFeed({ alerts }: AlertFeedProps) {
               )
             }) : (
               <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-                No alerts yet. Queue a scan to start generating notifications.
+                {emptyState}
               </div>
             )}
           </div>
         </ScrollArea>
         <div className="border-t p-3">
           <Link href="/dashboard/results" className="flex w-full items-center justify-center rounded-md border px-3 py-2 text-sm font-medium transition-colors hover:bg-muted">
-            View Latest Results
+            {footerLabel}
             <ChevronRight className="ml-2 size-4" />
           </Link>
         </div>

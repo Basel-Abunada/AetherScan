@@ -8,9 +8,17 @@ import { timeAgo } from "@/lib/aetherscan-client"
 
 interface AgentsStatusProps {
   agents: Agent[]
+  title?: string
+  description?: string
+  emptyState?: string
 }
 
-export function AgentsStatus({ agents }: AgentsStatusProps) {
+export function AgentsStatus({
+  agents,
+  title = "Agents Status",
+  description = "Active scanning agents",
+  emptyState = "No shared agents found.",
+}: AgentsStatusProps) {
   const onlineCount = agents.filter((agent) => agent.status === "online").length
   const occupiedCount = agents.filter((agent) => agent.status === "occupied").length
   const offlineCount = agents.filter((agent) => agent.status === "offline").length
@@ -34,8 +42,8 @@ export function AgentsStatus({ agents }: AgentsStatusProps) {
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle>Agents Status</CardTitle>
-            <CardDescription>Active scanning agents</CardDescription>
+            <CardTitle>{title}</CardTitle>
+            <CardDescription>{description}</CardDescription>
           </div>
           <div className="flex flex-wrap gap-4 text-sm">
             <span className="flex items-center gap-1 text-green-600">
@@ -74,7 +82,7 @@ export function AgentsStatus({ agents }: AgentsStatusProps) {
             </div>
           )) : (
             <div className="rounded-lg border border-dashed p-6 text-center text-sm text-muted-foreground">
-              No agents found.
+              {emptyState}
             </div>
           )}
         </div>

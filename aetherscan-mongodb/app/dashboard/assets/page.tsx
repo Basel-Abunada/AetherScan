@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Search, Filter, Monitor, Laptop, Server, Printer, Smartphone, Router, Eye, Cpu, Workflow } from "lucide-react"
 import { RiskBadge } from "@/components/risk-badge"
 import type { Asset, DeviceType } from "@/lib/aetherscan/types"
-import { fetchAssets, fetchVulnerabilities, formatDateTime } from "@/lib/aetherscan-client"
+import { fetchAssets, fetchVulnerabilities, formatDateTime, loadSession } from "@/lib/aetherscan-client"
 
 type AssetView = Asset & { deviceType: DeviceType; vulnerabilities: { high: number; medium: number; low: number } }
 
@@ -42,6 +42,11 @@ function inferDeviceType(asset: Asset): DeviceType {
 }
 
 export default function AssetsPage() {
+  const role = loadSession()?.user.role
+  const scopeLabel = role === "admin" ? "Discovered devices and their security status" : "Assets discovered through your scans and their security status"
+  const summaryAssetTitle = role === "admin" ? "Total Assets" : "My Assets"
+  const summaryVulnDescription = role === "admin" ? "Across all visible assets" : "Across assets from your scans"
+  const tableTitle = role === "admin" ? "Discovered Assets" : "My Discovered Assets"
   const [searchTerm, setSearchTerm] = useState("")
   const [typeFilter, setTypeFilter] = useState("all")
   const [selectedAsset, setSelectedAsset] = useState<AssetView | null>(null)
@@ -68,13 +73,13 @@ export default function AssetsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><h1 className="text-2xl font-bold tracking-tight">Network Assets</h1><p className="text-muted-foreground">Discovered devices and their security status</p></div></div>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"><div><h1 className="text-2xl font-bold tracking-tight">Network Assets</h1><p className="text-muted-foreground">{scopeLabel}</p></div></div>
 
       <div className="grid gap-4 sm:grid-cols-4">
-        <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Total Assets</CardTitle><Monitor className="size-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{assets.length}</div><p className="text-xs text-muted-foreground">Discovered devices</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{summaryAssetTitle}</CardTitle><Monitor className="size-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{assets.length}</div><p className="text-xs text-muted-foreground">Discovered devices</p></CardContent></Card>
         <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Servers</CardTitle><Server className="size-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{assets.filter((a) => a.deviceType === "server").length}</div><p className="text-xs text-muted-foreground">Server devices</p></CardContent></Card>
         <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">User Devices</CardTitle><Laptop className="size-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{assets.filter((a) => ["workstation", "laptop", "mobile"].includes(a.deviceType)).length}</div><p className="text-xs text-muted-foreground">Endpoints</p></CardContent></Card>
-        <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Vulnerabilities</CardTitle><Monitor className="size-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{totalVulnerabilities}</div><p className="text-xs text-muted-foreground">Across all assets</p></CardContent></Card>
+        <Card><CardHeader className="flex flex-row items-center justify-between pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Vulnerabilities</CardTitle><Monitor className="size-4 text-muted-foreground" /></CardHeader><CardContent><div className="text-2xl font-bold">{totalVulnerabilities}</div><p className="text-xs text-muted-foreground">{summaryVulnDescription}</p></CardContent></Card>
       </div>
 
       <Card>
@@ -87,7 +92,7 @@ export default function AssetsPage() {
       </Card>
 
       <Card>
-        <CardHeader><CardTitle>Discovered Assets</CardTitle><CardDescription>{filteredAssets.length} asset{filteredAssets.length !== 1 && "s"} found</CardDescription></CardHeader>
+        <CardHeader><CardTitle>{tableTitle}</CardTitle><CardDescription>{filteredAssets.length} asset{filteredAssets.length !== 1 && "s"} found</CardDescription></CardHeader>
         <CardContent>
           <Table>
             <TableHeader><TableRow><TableHead>Device</TableHead><TableHead>IP Address</TableHead><TableHead>Operating System</TableHead><TableHead className="text-center">Open Ports</TableHead><TableHead className="text-center">Vulnerabilities</TableHead><TableHead>Last Seen</TableHead><TableHead className="text-right">Actions</TableHead></TableRow></TableHeader>

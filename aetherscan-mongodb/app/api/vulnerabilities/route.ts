@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { getVisibleFindings } from "@/lib/aetherscan/access"
 import { requireUser } from "@/lib/aetherscan/auth"
 import { readDatabase } from "@/lib/aetherscan/store"
 
@@ -12,7 +13,8 @@ export async function GET(request: Request) {
   const q = (searchParams.get("q") ?? "").toLowerCase()
   const database = await readDatabase()
 
-  const findings = database.findings
+  const visibleAssets = new Map(database.assets.map((asset) => [asset.id, asset]))
+  const findings = getVisibleFindings(database, auth.user)
     .filter((finding) => (risk ? finding.riskLevel === risk : true))
     .filter((finding) => (status ? finding.status === status : true))
     .filter((finding) => !q
@@ -23,7 +25,7 @@ export async function GET(request: Request) {
       || finding.source.toLowerCase().includes(q)
       || finding.recommendation.toLowerCase().includes(q))
     .map((finding) => {
-      const asset = database.assets.find((entry) => entry.id === finding.assetId)
+      const asset = visibleAssets.get(finding.assetId)
       return {
         ...finding,
         affectedHost: asset?.ipAddress ?? finding.assetId,

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { requireUserRole } from "@/lib/aetherscan/auth"
+import { getVisibleSchedules } from "@/lib/aetherscan/access"
 import { readDatabase, updateDatabase } from "@/lib/aetherscan/store"
 import { addHours, makeId } from "@/lib/aetherscan/utils"
 
@@ -7,7 +8,7 @@ export async function GET(request: Request) {
   const auth = await requireUserRole(request, ["admin", "engineer"])
   if (!auth.user) return auth.response
   const database = await readDatabase()
-  return NextResponse.json(database.schedules)
+  return NextResponse.json(getVisibleSchedules(database, auth.user))
 }
 
 export async function POST(request: Request) {

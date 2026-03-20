@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server"
+import { canAccessFinding } from "@/lib/aetherscan/access"
 import { requireUser, requireUserRole } from "@/lib/aetherscan/auth"
-import { updateDatabase } from "@/lib/aetherscan/store"
+import { readDatabase, updateDatabase } from "@/lib/aetherscan/store"
 
 type Params = { params: Promise<{ id: string }> }
 
@@ -9,6 +10,10 @@ export async function PATCH(request: Request, { params }: Params) {
   if (!auth.user) return auth.response
   const { id } = await params
   const body = await request.json()
+  const database = await readDatabase()
+  if (!canAccessFinding(database, auth.user, id)) {
+    return NextResponse.json({ error: "Finding not found" }, { status: 404 })
+  }
 
   const finding = await updateDatabase((database) => {
     const candidate = database.findings.find((entry) => entry.id === id)

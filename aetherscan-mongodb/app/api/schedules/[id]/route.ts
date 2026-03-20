@@ -13,6 +13,7 @@ export async function PATCH(request: Request, { params }: Params) {
   const schedule = await updateDatabase((database) => {
     const candidate = database.schedules.find((entry) => entry.id === id)
     if (!candidate) return null
+    if (auth.user?.role !== "admin" && candidate.createdByUserId !== auth.user?.id) return null
     if (body.name) candidate.name = String(body.name)
     if (body.frequency) candidate.frequency = String(body.frequency)
     if (body.startTime) candidate.startTime = String(body.startTime)
@@ -33,6 +34,7 @@ export async function DELETE(request: Request, { params }: Params) {
   const removed = await updateDatabase((database) => {
     const index = database.schedules.findIndex((entry) => entry.id === id)
     if (index < 0) return false
+    if (auth.user?.role !== "admin" && database.schedules[index]?.createdByUserId !== auth.user?.id) return false
     database.schedules.splice(index, 1)
     return true
   })

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server"
+import { getVisibleReports, getVisibleScans, getVisibleFindings, getVisibleAssets } from "@/lib/aetherscan/access"
 import { requireUser } from "@/lib/aetherscan/auth"
 import { buildReportContent } from "@/lib/aetherscan/reports"
 import { readDatabase, updateDatabase } from "@/lib/aetherscan/store"
@@ -8,7 +9,7 @@ export async function GET(request: Request) {
   const auth = await requireUser(request)
   if (!auth.user) return auth.response
   const database = await readDatabase()
-  return NextResponse.json(database.reports.slice().reverse())
+  return NextResponse.json(getVisibleReports(database, auth.user).slice().reverse())
 }
 
 export async function POST(request: Request) {
@@ -19,7 +20,10 @@ export async function POST(request: Request) {
   const database = await readDatabase()
   const type = body.type === "scan" || body.type === "vulnerability" || body.type === "asset" || body.type === "executive" ? body.type : "executive"
   const format = body.format === "csv" ? "csv" : "pdf"
-  const content = buildReportContent({ type, format, scans: database.scans, findings: database.findings, assets: database.assets })
+  const visibleScans = getVisibleScans(database, auth.user)
+  const visibleFindings = getVisibleFindings(database, auth.user)
+  const visibleAssets = getVisibleAssets(database, auth.user)
+  const content = buildReportContent({ type, format, scans: visibleScans, findings: visibleFindings, assets: visibleAssets })
   const id = makeId("report")
   const fileName = `${id}.${format}`
   const generatedAt = nowIso()
@@ -31,6 +35,7 @@ export async function POST(request: Request) {
     format,
     generatedAt,
     generatedBy: String(body.generatedBy ?? auth.user.name),
+    createdByUserId: auth.user.id,
     sizeBytes: content.length,
     downloadPath: `/api/reports/${id}/download`,
   }
@@ -47,4 +52,3 @@ export async function POST(request: Request) {
     },
   })
 }
-
