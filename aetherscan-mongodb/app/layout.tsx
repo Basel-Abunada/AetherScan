@@ -17,14 +17,31 @@ export const metadata: Metadata = {
   },
 }
 
+const themeBootstrapScript = `
+(() => {
+  try {
+    const sessionRaw = window.localStorage.getItem("aetherscan-session")
+    const sessionTheme = sessionRaw ? JSON.parse(sessionRaw)?.user?.theme : null
+    const storedTheme = window.localStorage.getItem("aetherscan-theme")
+    const theme = storedTheme || sessionTheme || "system"
+    const resolvedTheme = theme === "system"
+      ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+      : theme
+    document.documentElement.classList.toggle("dark", resolvedTheme === "dark")
+    document.documentElement.style.colorScheme = resolvedTheme
+  } catch {}
+})()
+`
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body className="font-sans antialiased">
+        <script dangerouslySetInnerHTML={{ __html: themeBootstrapScript }} />
         {children}
         <Analytics />
       </body>

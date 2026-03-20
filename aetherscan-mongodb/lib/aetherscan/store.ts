@@ -80,6 +80,84 @@ function withDefaults(database: AetherScanDatabase): AetherScanDatabase {
   return database
 }
 
+function parseTimestamp(value?: string) {
+  if (!value) return Number.NaN
+  return new Date(value).getTime()
+}
+
+function applyDataRetentionPolicy(database: AetherScanDatabase) {
+  const retentionDays = Math.max(1, Math.min(365, database.settings.system.dataRetentionDays || 90))
+  const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000
+  let changed = false
+
+  const retainedScans = database.scans.filter((scan) => {
+    const referenceTime = parseTimestamp(scan.completedAt ?? scan.startedAt)
+    return Number.isNaN(referenceTime) || referenceTime >= cutoff
+  })
+  if (retainedScans.length !== database.scans.length) {
+    database.scans = retainedScans
+    changed = true
+  }
+
+  const retainedScanIds = new Set(database.scans.map((scan) => scan.id))
+
+  const retainedFindings = database.findings.filter((finding) => {
+    const referenceTime = parseTimestamp(finding.discoveredAt)
+    return retainedScanIds.has(finding.scanId) && (Number.isNaN(referenceTime) || referenceTime >= cutoff)
+  })
+  if (retainedFindings.length !== database.findings.length) {
+    database.findings = retainedFindings
+    changed = true
+  }
+
+  const retainedFindingIds = new Set(database.findings.map((finding) => finding.id))
+  const referencedAssetIds = new Set([
+    ...database.scans.flatMap((scan) => scan.assetIds),
+    ...database.findings.map((finding) => finding.assetId),
+  ])
+
+  const retainedAssets = database.assets.filter((asset) => {
+    const referenceTime = parseTimestamp(asset.lastSeenAt)
+    return referencedAssetIds.has(asset.id) || Number.isNaN(referenceTime) || referenceTime >= cutoff
+  })
+  if (retainedAssets.length !== database.assets.length) {
+    database.assets = retainedAssets
+    changed = true
+  }
+
+  const retainedAssetIds = new Set(database.assets.map((asset) => asset.id))
+
+  database.scans = database.scans.map((scan) => ({
+    ...scan,
+    assetIds: scan.assetIds.filter((assetId) => retainedAssetIds.has(assetId)),
+    findingIds: scan.findingIds.filter((findingId) => retainedFindingIds.has(findingId)),
+  }))
+
+  const retainedReports = database.reports.filter((report) => {
+    const referenceTime = parseTimestamp(report.generatedAt)
+    return Number.isNaN(referenceTime) || referenceTime >= cutoff
+  })
+  if (retainedReports.length !== database.reports.length) {
+    database.reports = retainedReports
+    changed = true
+  }
+
+  const retainedAlerts = database.alerts.filter((alert) => {
+    const referenceTime = parseTimestamp(alert.createdAt)
+    if (!Number.isNaN(referenceTime) && referenceTime < cutoff) return false
+    if (alert.scanId && !retainedScanIds.has(alert.scanId)) return false
+    if (alert.findingId && !retainedFindingIds.has(alert.findingId)) return false
+    if (alert.assetId && !retainedAssetIds.has(alert.assetId)) return false
+    return true
+  })
+  if (retainedAlerts.length !== database.alerts.length) {
+    database.alerts = retainedAlerts
+    changed = true
+  }
+
+  return changed
+}
+
 function isLegacySeed(database: AetherScanDatabase) {
   const legacyEmails = database.users.some((user) => user.email.endsWith(legacyEmailSuffix))
   const legacyAgents = database.agents.some((agent) => legacyAgentNames.includes(agent.name))
@@ -251,7 +329,13 @@ async function applyRuntimeState(database: AetherScanDatabase) {
   let changed = false
   const offlineAgents: Agent[] = []
 
-  database.sessions = database.sessions.filter((session) => new Date(session.expiresAt).getTime() > Date.now())
+  const activeSessions = database.sessions.filter((session) => new Date(session.expiresAt).getTime() > Date.now())
+  if (activeSessions.length !== database.sessions.length) {
+    database.sessions = activeSessions
+    changed = true
+  }
+
+  changed = applyDataRetentionPolicy(database) || changed
 
   for (const agent of database.agents) {
     const lastSeenDelta = Date.now() - new Date(agent.lastSeenAt).getTime()

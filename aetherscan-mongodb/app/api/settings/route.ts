@@ -14,7 +14,6 @@ export async function GET(request: Request) {
       role: auth.user.role,
       department: auth.user.department ?? "",
       theme: auth.user.theme ?? "system",
-      language: auth.user.language ?? "en",
       timezone: auth.user.timezone ?? "Asia/Kuala_Lumpur",
     },
     notifications: database.settings.notifications,
@@ -37,7 +36,6 @@ export async function PATCH(request: Request) {
       if (body.profile.email) user.email = String(body.profile.email).toLowerCase()
       if (body.profile.department !== undefined) user.department = String(body.profile.department)
       if (["light", "dark", "system"].includes(body.profile.theme)) user.theme = body.profile.theme
-      if (["en", "ar"].includes(body.profile.language)) user.language = body.profile.language
       if (body.profile.timezone) user.timezone = String(body.profile.timezone)
     }
 
@@ -70,7 +68,7 @@ export async function PATCH(request: Request) {
           ...body.system,
           defaultScanType: ["quick", "standard", "full", "vuln"].includes(body.system.defaultScanType) ? body.system.defaultScanType : database.settings.system.defaultScanType,
           autoGenerateReports: Boolean(body.system.autoGenerateReports ?? database.settings.system.autoGenerateReports),
-          dataRetentionDays: Number(body.system.dataRetentionDays ?? database.settings.system.dataRetentionDays),
+          dataRetentionDays: Math.max(1, Math.min(365, Number(body.system.dataRetentionDays ?? database.settings.system.dataRetentionDays) || database.settings.system.dataRetentionDays)),
         }
       }
     }
@@ -82,7 +80,6 @@ export async function PATCH(request: Request) {
         role: user.role,
         department: user.department ?? "",
         theme: user.theme ?? "system",
-        language: user.language ?? "en",
         timezone: user.timezone ?? "Asia/Kuala_Lumpur",
       },
       notifications: database.settings.notifications,

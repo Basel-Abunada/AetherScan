@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Plus, Play, Pause, MoreHorizontal, Trash2, Calendar, Clock, Server } from "lucide-react"
 import type { Agent, ScanSchedule } from "@/lib/aetherscan/types"
-import { createSchedule, deleteSchedule, fetchAgents, fetchSchedules, formatDateTime, runScan, updateSchedule } from "@/lib/aetherscan-client"
+import { createSchedule, deleteSchedule, fetchAgents, fetchSchedules, fetchSettings, formatDateTime, runScan, updateSchedule } from "@/lib/aetherscan-client"
 
 export default function ScanSchedulesPage() {
   const [schedules, setSchedules] = useState<ScanSchedule[]>([])
@@ -22,18 +22,27 @@ export default function ScanSchedulesPage() {
   const [loading, setLoading] = useState(true)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
-  const [form, setForm] = useState({ name: "", agentId: "", frequency: "Daily", startTime: "02:00", scanType: "full", target: "", mode: "live" })
+  const [form, setForm] = useState({ name: "", agentId: "", frequency: "Daily", startTime: "02:00", scanType: "standard", target: "", mode: "live" })
   const [runForm, setRunForm] = useState({ agentId: "", target: "", scanType: "standard", mode: "live" })
 
   const loadData = async () => {
     setLoading(true)
     setError("")
     try {
-      const [schedulesData, agentsData] = await Promise.all([fetchSchedules(), fetchAgents()])
+      const [schedulesData, agentsData, settings] = await Promise.all([fetchSchedules(), fetchAgents(), fetchSettings()])
+      const defaultScanType = settings.system.defaultScanType
       setSchedules(schedulesData)
       setAgents(agentsData)
-      setForm((current) => ({ ...current, agentId: current.agentId || agentsData[0]?.id || "" }))
-      setRunForm((current) => ({ ...current, agentId: current.agentId || agentsData[0]?.id || "" }))
+      setForm((current) => ({
+        ...current,
+        agentId: current.agentId || agentsData[0]?.id || "",
+        scanType: current.name || current.target ? current.scanType : defaultScanType,
+      }))
+      setRunForm((current) => ({
+        ...current,
+        agentId: current.agentId || agentsData[0]?.id || "",
+        scanType: current.target ? current.scanType : defaultScanType,
+      }))
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load schedules")
     } finally { setLoading(false) }
