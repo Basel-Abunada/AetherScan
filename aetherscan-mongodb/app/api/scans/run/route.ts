@@ -24,6 +24,8 @@ export async function POST(request: Request) {
     const scan = createQueuedScan(database, {
       agentId,
       agentName: agent.name,
+      createdByUserId: auth.user?.id,
+      createdByUserName: auth.user?.name,
       target,
       scanType,
       mode,

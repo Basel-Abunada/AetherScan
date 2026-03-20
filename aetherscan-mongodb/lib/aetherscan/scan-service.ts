@@ -5,6 +5,8 @@ import { makeId, normalizeScanTarget, nowIso } from "@/lib/aetherscan/utils"
 export function createQueuedScan(database: AetherScanDatabase, input: {
   agentId: string
   agentName: string
+  createdByUserId?: string
+  createdByUserName?: string
   target: string
   scanType: ScanType
   mode: ScanMode
@@ -13,6 +15,8 @@ export function createQueuedScan(database: AetherScanDatabase, input: {
     id: makeId("scan"),
     agentId: input.agentId,
     agentName: input.agentName,
+    createdByUserId: input.createdByUserId,
+    createdByUserName: input.createdByUserName,
     target: normalizeScanTarget(input.target),
     scanType: input.scanType,
     mode: input.mode,

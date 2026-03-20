@@ -16,9 +16,9 @@ export async function GET(request: Request) {
       theme: auth.user.theme ?? "system",
       timezone: auth.user.timezone ?? "Asia/Kuala_Lumpur",
     },
-    notifications: database.settings.notifications,
-    email: database.settings.email,
-    system: database.settings.system,
+    notifications: auth.user.notificationSettings ?? database.settings.notifications,
+    email: auth.user.emailSettings ?? database.settings.email,
+    system: auth.user.systemSettings ?? database.settings.system,
   })
 }
 
@@ -39,37 +39,35 @@ export async function PATCH(request: Request) {
       if (body.profile.timezone) user.timezone = String(body.profile.timezone)
     }
 
-    if (auth.user?.role === "admin") {
-      if (body.notifications) {
-        database.settings.notifications = {
-          ...database.settings.notifications,
-          ...body.notifications,
-          alertEmail: String(body.notifications.alertEmail ?? database.settings.notifications.alertEmail ?? ""),
-          ccEmail: String(body.notifications.ccEmail ?? database.settings.notifications.ccEmail ?? ""),
-        }
+    if (body.notifications) {
+      user.notificationSettings = {
+        ...(user.notificationSettings ?? database.settings.notifications),
+        ...body.notifications,
+        alertEmail: String(body.notifications.alertEmail ?? user.notificationSettings?.alertEmail ?? database.settings.notifications.alertEmail ?? ""),
+        ccEmail: String(body.notifications.ccEmail ?? user.notificationSettings?.ccEmail ?? database.settings.notifications.ccEmail ?? ""),
       }
+    }
 
-      if (body.email) {
-        database.settings.email = {
-          ...database.settings.email,
-          ...body.email,
-          host: String(body.email.host ?? database.settings.email.host ?? ""),
-          port: Number(body.email.port ?? database.settings.email.port ?? 587),
-          secure: Boolean(body.email.secure ?? database.settings.email.secure),
-          username: String(body.email.username ?? database.settings.email.username ?? ""),
-          password: String(body.email.password ?? database.settings.email.password ?? ""),
-          from: String(body.email.from ?? database.settings.email.from ?? ""),
-        }
+    if (body.email) {
+      user.emailSettings = {
+        ...(user.emailSettings ?? database.settings.email),
+        ...body.email,
+        host: String(body.email.host ?? user.emailSettings?.host ?? database.settings.email.host ?? ""),
+        port: Number(body.email.port ?? user.emailSettings?.port ?? database.settings.email.port ?? 587),
+        secure: Boolean(body.email.secure ?? user.emailSettings?.secure ?? database.settings.email.secure),
+        username: String(body.email.username ?? user.emailSettings?.username ?? database.settings.email.username ?? ""),
+        password: String(body.email.password ?? user.emailSettings?.password ?? database.settings.email.password ?? ""),
+        from: String(body.email.from ?? user.emailSettings?.from ?? database.settings.email.from ?? ""),
       }
+    }
 
-      if (body.system) {
-        database.settings.system = {
-          ...database.settings.system,
-          ...body.system,
-          defaultScanType: ["quick", "standard", "full", "vuln"].includes(body.system.defaultScanType) ? body.system.defaultScanType : database.settings.system.defaultScanType,
-          autoGenerateReports: Boolean(body.system.autoGenerateReports ?? database.settings.system.autoGenerateReports),
-          dataRetentionDays: Math.max(1, Math.min(365, Number(body.system.dataRetentionDays ?? database.settings.system.dataRetentionDays) || database.settings.system.dataRetentionDays)),
-        }
+    if (body.system) {
+      user.systemSettings = {
+        ...(user.systemSettings ?? database.settings.system),
+        ...body.system,
+        defaultScanType: ["quick", "standard", "full", "vuln"].includes(body.system.defaultScanType) ? body.system.defaultScanType : user.systemSettings?.defaultScanType ?? database.settings.system.defaultScanType,
+        autoGenerateReports: Boolean(body.system.autoGenerateReports ?? user.systemSettings?.autoGenerateReports ?? database.settings.system.autoGenerateReports),
+        dataRetentionDays: Math.max(1, Math.min(365, Number(body.system.dataRetentionDays ?? user.systemSettings?.dataRetentionDays ?? database.settings.system.dataRetentionDays) || (user.systemSettings?.dataRetentionDays ?? database.settings.system.dataRetentionDays))),
       }
     }
 
@@ -82,9 +80,9 @@ export async function PATCH(request: Request) {
         theme: user.theme ?? "system",
         timezone: user.timezone ?? "Asia/Kuala_Lumpur",
       },
-      notifications: database.settings.notifications,
-      email: database.settings.email,
-      system: database.settings.system,
+      notifications: user.notificationSettings ?? database.settings.notifications,
+      email: user.emailSettings ?? database.settings.email,
+      system: user.systemSettings ?? database.settings.system,
     }
   })
 

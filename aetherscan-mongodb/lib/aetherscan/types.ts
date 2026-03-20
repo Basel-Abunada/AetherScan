@@ -25,6 +25,9 @@ export interface User {
   theme?: "light" | "dark" | "system"
   language?: "en" | "ar"
   timezone?: string
+  notificationSettings?: NotificationSettings
+  emailSettings?: EmailTransportSettings
+  systemSettings?: SystemSettings
 }
 
 export interface Session {
@@ -56,6 +59,8 @@ export interface ScanSchedule {
   id: string
   name: string
   agentId: string
+  createdByUserId?: string
+  createdByUserName?: string
   target: string
   frequency: string
   startTime: string
@@ -129,6 +134,8 @@ export interface ScanResult {
   id: string
   agentId: string
   agentName: string
+  createdByUserId?: string
+  createdByUserName?: string
   target: string
   scanType: ScanType
   mode: ScanMode

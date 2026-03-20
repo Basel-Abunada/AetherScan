@@ -11,7 +11,7 @@ import type {
   Session,
   User,
 } from "@/lib/aetherscan/types"
-import { sendNotificationEmail } from "@/lib/aetherscan/email"
+import { sendNotificationEmailToUsers } from "@/lib/aetherscan/email"
 import { ensureMongoCollections, getMongoCollection, getMongoDatabase } from "@/lib/aetherscan/mongodb"
 import { createDefaultSettings, createSeedDatabase } from "@/lib/aetherscan/seed"
 import { makeId, nowIso } from "@/lib/aetherscan/utils"
@@ -75,6 +75,9 @@ function withDefaults(database: AetherScanDatabase): AetherScanDatabase {
     user.theme ??= "system"
     user.language ??= "en"
     user.timezone ??= "Asia/Kuala_Lumpur"
+    user.notificationSettings ??= structuredClone(defaultSettings.notifications)
+    user.emailSettings ??= structuredClone(defaultSettings.email)
+    user.systemSettings ??= structuredClone(defaultSettings.system)
   }
 
   return database
@@ -85,12 +88,18 @@ function parseTimestamp(value?: string) {
   return new Date(value).getTime()
 }
 
+function retentionDaysForUser(database: AetherScanDatabase, userId?: string) {
+  const fallback = database.settings.system.dataRetentionDays || 90
+  const user = userId ? database.users.find((entry) => entry.id === userId) : undefined
+  return Math.max(1, Math.min(365, user?.systemSettings?.dataRetentionDays ?? fallback))
+}
+
 function applyDataRetentionPolicy(database: AetherScanDatabase) {
-  const retentionDays = Math.max(1, Math.min(365, database.settings.system.dataRetentionDays || 90))
-  const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000
   let changed = false
 
   const retainedScans = database.scans.filter((scan) => {
+    const retentionDays = retentionDaysForUser(database, scan.createdByUserId)
+    const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000
     const referenceTime = parseTimestamp(scan.completedAt ?? scan.startedAt)
     return Number.isNaN(referenceTime) || referenceTime >= cutoff
   })
@@ -102,6 +111,9 @@ function applyDataRetentionPolicy(database: AetherScanDatabase) {
   const retainedScanIds = new Set(database.scans.map((scan) => scan.id))
 
   const retainedFindings = database.findings.filter((finding) => {
+    const ownerScan = database.scans.find((scan) => scan.id === finding.scanId)
+    const retentionDays = retentionDaysForUser(database, ownerScan?.createdByUserId)
+    const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000
     const referenceTime = parseTimestamp(finding.discoveredAt)
     return retainedScanIds.has(finding.scanId) && (Number.isNaN(referenceTime) || referenceTime >= cutoff)
   })
@@ -117,6 +129,11 @@ function applyDataRetentionPolicy(database: AetherScanDatabase) {
   ])
 
   const retainedAssets = database.assets.filter((asset) => {
+    const relatedScans = database.scans.filter((scan) => scan.assetIds.includes(asset.id))
+    const retentionDays = relatedScans.length > 0
+      ? Math.max(...relatedScans.map((scan) => retentionDaysForUser(database, scan.createdByUserId)))
+      : retentionDaysForUser(database)
+    const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000
     const referenceTime = parseTimestamp(asset.lastSeenAt)
     return referencedAssetIds.has(asset.id) || Number.isNaN(referenceTime) || referenceTime >= cutoff
   })
@@ -134,6 +151,9 @@ function applyDataRetentionPolicy(database: AetherScanDatabase) {
   }))
 
   const retainedReports = database.reports.filter((report) => {
+    const matchingScan = database.scans.find((scan) => report.name.includes(scan.id))
+    const retentionDays = retentionDaysForUser(database, matchingScan?.createdByUserId)
+    const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000
     const referenceTime = parseTimestamp(report.generatedAt)
     return Number.isNaN(referenceTime) || referenceTime >= cutoff
   })
@@ -143,6 +163,9 @@ function applyDataRetentionPolicy(database: AetherScanDatabase) {
   }
 
   const retainedAlerts = database.alerts.filter((alert) => {
+    const relatedScan = database.scans.find((scan) => scan.id === alert.scanId)
+    const retentionDays = retentionDaysForUser(database, relatedScan?.createdByUserId)
+    const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000
     const referenceTime = parseTimestamp(alert.createdAt)
     if (!Number.isNaN(referenceTime) && referenceTime < cutoff) return false
     if (alert.scanId && !retainedScanIds.has(alert.scanId)) return false
@@ -358,9 +381,10 @@ async function applyRuntimeState(database: AetherScanDatabase) {
 
   if (changed) {
     await persistDatabase(database)
-    if (database.settings.notifications.agentOffline) {
+    const optedInUsers = database.users.filter((user) => user.notificationSettings?.agentOffline).map((user) => user.id)
+    if (optedInUsers.length > 0) {
       for (const agent of offlineAgents) {
-        await sendNotificationEmail(database, {
+        await sendNotificationEmailToUsers(database, optedInUsers, {
           subject: `AetherScan agent offline: ${agent.name}`,
           text: `${agent.name} (${agent.ipAddress}) has gone offline and is no longer polling the server.`,
         }).catch(() => null)

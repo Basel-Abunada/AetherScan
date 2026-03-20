@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { requireUserRole } from "@/lib/aetherscan/auth"
+import { createDefaultSettings } from "@/lib/aetherscan/seed"
 import { readDatabase, updateDatabase } from "@/lib/aetherscan/store"
 import { hashPassword, makeId, nowIso, validatePasswordStrength } from "@/lib/aetherscan/utils"
 
@@ -20,6 +21,7 @@ export async function POST(request: Request) {
   if (passwordError) {
     return NextResponse.json({ error: passwordError }, { status: 400 })
   }
+  const defaultSettings = createDefaultSettings()
 
   const user = {
     id: makeId("user"),
@@ -33,6 +35,9 @@ export async function POST(request: Request) {
     theme: "system" as const,
     language: "en" as const,
     timezone: "Asia/Kuala_Lumpur",
+    notificationSettings: defaultSettings.notifications,
+    emailSettings: defaultSettings.email,
+    systemSettings: defaultSettings.system,
   }
 
   await updateDatabase((database) => {

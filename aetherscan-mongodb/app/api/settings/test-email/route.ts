@@ -1,15 +1,15 @@
 import { NextResponse } from "next/server"
-import { requireUserRole } from "@/lib/aetherscan/auth"
-import { sendNotificationEmail } from "@/lib/aetherscan/email"
+import { requireUser } from "@/lib/aetherscan/auth"
+import { sendNotificationEmailToUser } from "@/lib/aetherscan/email"
 import { readDatabase } from "@/lib/aetherscan/store"
 
 export async function POST(request: Request) {
-  const auth = await requireUserRole(request, ["admin"])
+  const auth = await requireUser(request)
   if (!auth.user) return auth.response
   const database = await readDatabase()
 
   try {
-    const result = await sendNotificationEmail(database, {
+    const result = await sendNotificationEmailToUser(database, auth.user.id, {
       subject: "AetherScan test email",
       text: `This is a test notification sent by ${auth.user.name} from the AetherScan settings page.`,
     })

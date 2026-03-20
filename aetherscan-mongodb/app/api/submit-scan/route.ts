@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { requireAgent } from "@/lib/aetherscan/auth"
-import { sendNotificationEmail } from "@/lib/aetherscan/email"
+import { sendNotificationEmailToUser } from "@/lib/aetherscan/email"
 import { buildReportContent } from "@/lib/aetherscan/reports"
 import { finalizeScan } from "@/lib/aetherscan/scan-service"
 import { updateDatabase } from "@/lib/aetherscan/store"
@@ -101,7 +101,9 @@ export async function POST(request: Request) {
         })
       }
 
-      if (database.settings.system.autoGenerateReports) {
+      const scanOwner = database.users.find((user) => user.id === result.scan.createdByUserId)
+      const shouldAutoGenerateReport = scanOwner?.systemSettings?.autoGenerateReports ?? database.settings.system.autoGenerateReports
+      if (shouldAutoGenerateReport) {
         const generatedAt = nowIso()
         const reportId = makeId("report")
         const content = buildReportContent({
@@ -117,7 +119,7 @@ export async function POST(request: Request) {
           type: "scan",
           format: "pdf",
           generatedAt,
-          generatedBy: auth.agent?.name ?? "Agent",
+          generatedBy: result.scan.createdByUserName ?? auth.agent?.name ?? "Agent",
           sizeBytes: content.length,
           downloadPath: `/api/reports/${reportId}/download`,
         })
@@ -127,21 +129,23 @@ export async function POST(request: Request) {
         scan: result.scan,
         highRiskCount: result.vulnerabilities.high,
         mediumRiskCount: result.vulnerabilities.medium,
+        ownerUserId: result.scan.createdByUserId,
+        ownerNotificationSettings: database.users.find((user) => user.id === result.scan.createdByUserId)?.notificationSettings,
         database,
       }
     })
 
     if (!completion?.scan) return NextResponse.json({ error: "Queued scan not found" }, { status: 404 })
 
-    if (completion.database.settings.notifications.scanCompletion) {
-      await sendNotificationEmail(completion.database, {
+    if (completion.ownerUserId && completion.ownerNotificationSettings?.scanCompletion) {
+      await sendNotificationEmailToUser(completion.database, completion.ownerUserId, {
         subject: `AetherScan scan completed: ${completion.scan.target}`,
         text: `Scan ${completion.scan.id} completed successfully. Hosts detected: ${completion.scan.totalHosts}. High risk findings: ${completion.highRiskCount}. Medium risk findings: ${completion.mediumRiskCount}.`,
       }).catch(() => null)
     }
 
-    if (completion.highRiskCount > 0 && completion.database.settings.notifications.highRiskAlerts) {
-      await sendNotificationEmail(completion.database, {
+    if (completion.ownerUserId && completion.highRiskCount > 0 && completion.ownerNotificationSettings?.highRiskAlerts) {
+      await sendNotificationEmailToUser(completion.database, completion.ownerUserId, {
         subject: `AetherScan high-risk findings detected on ${completion.scan.target}`,
         text: `Scan ${completion.scan.id} identified ${completion.highRiskCount} high-risk finding(s). Review the Vulnerabilities page immediately.`,
       }).catch(() => null)

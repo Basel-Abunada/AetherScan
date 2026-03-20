@@ -55,6 +55,8 @@ export async function GET(request: Request) {
     const queuedFromSchedule = createQueuedScan(database, {
       agentId: auth.agent.id,
       agentName: auth.agent.name,
+      createdByUserId: dueSchedule.createdByUserId,
+      createdByUserName: dueSchedule.createdByUserName,
       target: dueSchedule.target,
       scanType: dueSchedule.scanType,
       mode: dueSchedule.mode,

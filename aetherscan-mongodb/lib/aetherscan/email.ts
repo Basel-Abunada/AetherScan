@@ -1,47 +1,57 @@
 import nodemailer from "nodemailer"
-import type { AetherScanDatabase } from "@/lib/aetherscan/types"
+import type { AetherScanDatabase, User } from "@/lib/aetherscan/types"
 
-function notificationRecipients(database: AetherScanDatabase) {
-  const primary = database.settings.notifications.alertEmail.trim()
-  const cc = database.settings.notifications.ccEmail.trim()
+function notificationRecipients(user: User) {
+  const primary = user.notificationSettings?.alertEmail?.trim() || user.email
+  const cc = user.notificationSettings?.ccEmail?.trim()
   return {
-    to: primary || database.users.find((user) => user.role === "admin")?.email || "",
+    to: primary,
     cc: cc || undefined,
   }
 }
 
-export function emailConfigured(database: AetherScanDatabase) {
-  const settings = database.settings
+function resolveEmailSettings(database: AetherScanDatabase, user: User) {
+  return user.emailSettings ?? database.settings.email
+}
+
+export function emailConfiguredForUser(database: AetherScanDatabase, user: User) {
+  const emailSettings = resolveEmailSettings(database, user)
+  const recipients = notificationRecipients(user)
   return Boolean(
-    settings.notifications.emailEnabled &&
-    settings.email.host &&
-    settings.email.port &&
-    settings.email.from &&
-    notificationRecipients(database).to,
+    user.notificationSettings?.emailEnabled &&
+    emailSettings.host &&
+    emailSettings.port &&
+    emailSettings.from &&
+    recipients.to,
   )
 }
 
-export async function sendNotificationEmail(database: AetherScanDatabase, input: { subject: string; text: string; html?: string }) {
-  if (!emailConfigured(database)) {
-    return { ok: false, reason: "Email notifications are not configured" }
+export async function sendNotificationEmailToUser(database: AetherScanDatabase, userId: string, input: { subject: string; text: string; html?: string }) {
+  const user = database.users.find((entry) => entry.id === userId)
+  if (!user) {
+    return { ok: false, reason: "User not found" }
   }
 
+  if (!emailConfiguredForUser(database, user)) {
+    return { ok: false, reason: "Email notifications are not configured for this user" }
+  }
+
+  const emailSettings = resolveEmailSettings(database, user)
+  const recipients = notificationRecipients(user)
   const transporter = nodemailer.createTransport({
-    host: database.settings.email.host,
-    port: database.settings.email.port,
-    secure: database.settings.email.secure,
-    auth: database.settings.email.username
+    host: emailSettings.host,
+    port: emailSettings.port,
+    secure: emailSettings.secure,
+    auth: emailSettings.username
       ? {
-          user: database.settings.email.username,
-          pass: database.settings.email.password,
+          user: emailSettings.username,
+          pass: emailSettings.password,
         }
       : undefined,
   })
 
-  const recipients = notificationRecipients(database)
-
   await transporter.sendMail({
-    from: database.settings.email.from,
+    from: emailSettings.from,
     to: recipients.to,
     cc: recipients.cc,
     subject: input.subject,
@@ -50,4 +60,13 @@ export async function sendNotificationEmail(database: AetherScanDatabase, input:
   })
 
   return { ok: true }
+}
+
+export async function sendNotificationEmailToUsers(database: AetherScanDatabase, userIds: string[], input: { subject: string; text: string; html?: string }) {
+  const uniqueUserIds = [...new Set(userIds)]
+  const results = await Promise.all(uniqueUserIds.map((userId) => sendNotificationEmailToUser(database, userId, input).catch((error) => ({ ok: false, reason: error instanceof Error ? error.message : "Failed to send email" }))))
+  return {
+    ok: results.some((result) => result.ok),
+    results,
+  }
 }

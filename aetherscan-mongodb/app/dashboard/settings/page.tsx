@@ -360,7 +360,7 @@ export default function SettingsPage() {
                   <p className="font-medium">Email Notifications</p>
                   <p className="text-sm text-muted-foreground">Receive alerts and scan results via email</p>
                 </div>
-                <Switch checked={notifications.emailEnabled} onCheckedChange={(checked) => setNotifications((current) => ({ ...current, emailEnabled: checked }))} disabled={!isAdmin} />
+                <Switch checked={notifications.emailEnabled} onCheckedChange={(checked) => setNotifications((current) => ({ ...current, emailEnabled: checked }))} />
               </div>
               <Separator />
               <div className="flex items-center justify-between">
@@ -368,7 +368,7 @@ export default function SettingsPage() {
                   <p className="font-medium">High Risk Alerts</p>
                   <p className="text-sm text-muted-foreground">Immediate alerts for critical vulnerabilities</p>
                 </div>
-                <Switch checked={notifications.highRiskAlerts} onCheckedChange={(checked) => setNotifications((current) => ({ ...current, highRiskAlerts: checked }))} disabled={!isAdmin} />
+                <Switch checked={notifications.highRiskAlerts} onCheckedChange={(checked) => setNotifications((current) => ({ ...current, highRiskAlerts: checked }))} />
               </div>
               <Separator />
               <div className="flex items-center justify-between">
@@ -376,7 +376,7 @@ export default function SettingsPage() {
                   <p className="font-medium">Scan Completion</p>
                   <p className="text-sm text-muted-foreground">Notify when scans complete</p>
                 </div>
-                <Switch checked={notifications.scanCompletion} onCheckedChange={(checked) => setNotifications((current) => ({ ...current, scanCompletion: checked }))} disabled={!isAdmin} />
+                <Switch checked={notifications.scanCompletion} onCheckedChange={(checked) => setNotifications((current) => ({ ...current, scanCompletion: checked }))} />
               </div>
               <Separator />
               <div className="flex items-center justify-between">
@@ -384,10 +384,10 @@ export default function SettingsPage() {
                   <p className="font-medium">Agent Status</p>
                   <p className="text-sm text-muted-foreground">Alert when agents go offline</p>
                 </div>
-                <Switch checked={notifications.agentOffline} onCheckedChange={(checked) => setNotifications((current) => ({ ...current, agentOffline: checked }))} disabled={!isAdmin} />
+                <Switch checked={notifications.agentOffline} onCheckedChange={(checked) => setNotifications((current) => ({ ...current, agentOffline: checked }))} />
               </div>
               <div className="flex justify-end">
-                <Button onClick={saveNotificationSettings} disabled={!isAdmin}>Save Notification Settings</Button>
+                <Button onClick={saveNotificationSettings}>Save Notification Settings</Button>
               </div>
             </CardContent>
           </Card>
@@ -404,49 +404,49 @@ export default function SettingsPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>Alert Email Address</Label>
-                  <Input value={notifications.alertEmail} onChange={(event) => setNotifications((current) => ({ ...current, alertEmail: event.target.value }))} disabled={!isAdmin} />
+                  <Input value={notifications.alertEmail} onChange={(event) => setNotifications((current) => ({ ...current, alertEmail: event.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>CC Email</Label>
-                  <Input value={notifications.ccEmail} onChange={(event) => setNotifications((current) => ({ ...current, ccEmail: event.target.value }))} disabled={!isAdmin} />
+                  <Input value={notifications.ccEmail} onChange={(event) => setNotifications((current) => ({ ...current, ccEmail: event.target.value }))} />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>SMTP Host</Label>
-                  <Input value={email.host} onChange={(event) => setEmail((current) => ({ ...current, host: event.target.value }))} disabled={!isAdmin} />
+                  <Input value={email.host} onChange={(event) => setEmail((current) => ({ ...current, host: event.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>SMTP Port</Label>
-                  <Input type="number" value={email.port} onChange={(event) => setEmail((current) => ({ ...current, port: Number(event.target.value) || 587 }))} disabled={!isAdmin} />
+                  <Input type="number" value={email.port} onChange={(event) => setEmail((current) => ({ ...current, port: Number(event.target.value) || 587 }))} />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>SMTP Username</Label>
-                  <Input value={email.username} onChange={(event) => setEmail((current) => ({ ...current, username: event.target.value }))} disabled={!isAdmin} />
+                  <Input value={email.username} onChange={(event) => setEmail((current) => ({ ...current, username: event.target.value }))} />
                 </div>
                 <div className="space-y-2">
                   <Label>SMTP Password</Label>
-                  <Input type="password" value={email.password} onChange={(event) => setEmail((current) => ({ ...current, password: event.target.value }))} disabled={!isAdmin} />
+                  <Input type="password" value={email.password} onChange={(event) => setEmail((current) => ({ ...current, password: event.target.value }))} />
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
                   <Label>From Address</Label>
-                  <Input value={email.from} onChange={(event) => setEmail((current) => ({ ...current, from: event.target.value }))} disabled={!isAdmin} />
+                  <Input value={email.from} onChange={(event) => setEmail((current) => ({ ...current, from: event.target.value }))} />
                 </div>
                 <div className="mt-8 flex items-center justify-between rounded-lg border px-4 py-3">
                   <div>
                     <p className="font-medium">Secure Connection</p>
                     <p className="text-sm text-muted-foreground">Use SMTPS/TLS</p>
                   </div>
-                  <Switch checked={email.secure} onCheckedChange={(checked) => setEmail((current) => ({ ...current, secure: checked }))} disabled={!isAdmin} />
+                  <Switch checked={email.secure} onCheckedChange={(checked) => setEmail((current) => ({ ...current, secure: checked }))} />
                 </div>
               </div>
               <div className="flex justify-end gap-2">
-                <Button variant="outline" onClick={sendSettingsTestEmail} disabled={!isAdmin}>Send Test Email</Button>
-                <Button onClick={saveEmailSettings} disabled={!isAdmin}>Save Email Settings</Button>
+                <Button variant="outline" onClick={sendSettingsTestEmail}>Send Test Email</Button>
+                <Button onClick={saveEmailSettings}>Save Email Settings</Button>
               </div>
             </CardContent>
           </Card>
@@ -530,7 +530,7 @@ export default function SettingsPage() {
                   <p className="font-medium">Default Scan Type</p>
                   <p className="text-sm text-muted-foreground">Default scan type for new schedules and queued scans</p>
                 </div>
-                <Select value={system.defaultScanType} onValueChange={(value) => setSystem((current) => ({ ...current, defaultScanType: value }))} disabled={!isAdmin}>
+                <Select value={system.defaultScanType} onValueChange={(value) => setSystem((current) => ({ ...current, defaultScanType: value }))}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue />
                   </SelectTrigger>
@@ -548,7 +548,7 @@ export default function SettingsPage() {
                   <p className="font-medium">Auto-generate Reports</p>
                   <p className="text-sm text-muted-foreground">Create reports after scan completion</p>
                 </div>
-                <Switch checked={system.autoGenerateReports} onCheckedChange={(checked) => setSystem((current) => ({ ...current, autoGenerateReports: checked }))} disabled={!isAdmin} />
+                <Switch checked={system.autoGenerateReports} onCheckedChange={(checked) => setSystem((current) => ({ ...current, autoGenerateReports: checked }))} />
               </div>
               <Separator />
               <div className="flex items-center justify-between gap-4">
@@ -563,11 +563,10 @@ export default function SettingsPage() {
                   max={365}
                   value={system.dataRetentionDays}
                   onChange={(event) => setSystem((current) => ({ ...current, dataRetentionDays: Math.max(1, Math.min(365, Number(event.target.value) || 1)) }))}
-                  disabled={!isAdmin}
                 />
               </div>
               <div className="flex justify-end">
-                <Button onClick={saveSystemSettings} disabled={!isAdmin}>Save System Settings</Button>
+                <Button onClick={saveSystemSettings}>Save System Settings</Button>
               </div>
             </CardContent>
           </Card>

@@ -19,6 +19,8 @@ export async function POST(request: Request) {
     id: makeId("schedule"),
     name: String(body.name ?? "New Schedule"),
     agentId: String(body.agentId ?? ""),
+    createdByUserId: auth.user.id,
+    createdByUserName: auth.user.name,
     target: String(body.target ?? "").trim(),
     frequency: String(body.frequency ?? "Daily"),
     startTime: String(body.startTime ?? "02:00"),
