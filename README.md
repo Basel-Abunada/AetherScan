@@ -1,29 +1,53 @@
-# AetherScan Prototype
+# AetherScan
 
-This workspace contains a thesis-aligned working prototype of AetherScan inside the existing Next.js app.
+This repository now uses the MongoDB edition of AetherScan as the single maintained application.
 
-## Implemented core architecture
+## Active app
 
-- JWT-based authentication with bearer tokens
-- Role-based access control for admin, engineer, and technician users
-- Central web server with dashboard and REST API routes
-- Agent inventory with registration, heartbeat, and job polling
-- Agent-submitted scan results
-- Nmap execution path for live scans on the agent host
-- Risk classification and remediation guidance
-- Alerts generated from high-risk findings
-- Dashboard aggregation
-- CSV and PDF report generation
+All current development happens in:
 
-## Credentials
+`aetherscan-mongodb/`
 
-Seeded local accounts are documented in [CREDENTIALS.md](C:\Users\abase\OneDrive\Desktop\AetherScan\CREDENTIALS.md).
+That app contains:
 
-## Agent flow
+- the Next.js dashboard
+- the API routes
+- MongoDB-backed storage
+- the Kali/Linux scan agent
+- reporting, alerts, schedules, and settings
 
-1. Register an agent in the web UI.
-2. Copy the generated token to the agent host.
-3. Start the agent process.
-4. Queue a scan from the web UI.
-5. The agent polls the server, executes Nmap locally, and submits results.
-6. Dashboard, assets, vulnerabilities, and reports update from the submitted scan.
+## Quick start
+
+```powershell
+cd .\aetherscan-mongodb
+npm install
+npm run dev -- --port 3001
+```
+
+Open:
+
+- `http://localhost:3001/login`
+
+## Environment
+
+Create `aetherscan-mongodb/.env.local` with:
+
+```env
+MONGODB_URI=mongodb://127.0.0.1:27017
+AETHERSCAN_DB_NAME=aetherscan_mongodb
+AETHERSCAN_JWT_SECRET=change-me-in-real-deployments
+```
+
+## Repository layout
+
+- `aetherscan-mongodb/app` - routes, pages, and API handlers
+- `aetherscan-mongodb/components` - shared UI and dashboard components
+- `aetherscan-mongodb/lib` - auth, storage, reporting, and scan logic
+- `aetherscan-mongodb/scripts` - agent and MongoDB utility scripts
+- `aetherscan-mongodb/public` - static assets
+
+## Notes
+
+- Legacy root-level prototype files have been retired from active use.
+- The MongoDB app is the source of truth for the project.
+- Local credentials for the MongoDB app are documented in `aetherscan-mongodb/CREDENTIALS.md`.

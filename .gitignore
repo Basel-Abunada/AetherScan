@@ -9,3 +9,7 @@ node_modules/
 .env*.local
 .DS_Store
 .data/
+*.tsbuildinfo
+.tmp-dev-*.log
+tmp_*
+aetherscan-mongodb/AetherScan/

@@ -1,13 +1,15 @@
 # AetherScan MongoDB
 
-This folder is the dedicated MongoDB version of AetherScan. The original JSON-file app in the parent workspace remains untouched as a fallback.
+This is the active and maintained AetherScan application.
 
-## What changed
+## Features
 
-- Application data is stored in organized MongoDB collections instead of `.data/aetherscan.json`
-- Collections are split by domain: `users`, `sessions`, `agents`, `schedules`, `assets`, `findings`, `alerts`, `scans`, `reports`, `settings`, and `metadata`
-- The app can automatically migrate an older single-document `app_state` layout into the organized collections layout
-- You can optionally import your old JSON data from the original app into MongoDB
+- Next.js dashboard and API routes
+- MongoDB-backed persistence
+- role-based access for admin, engineer, and technician users
+- scan agents with heartbeat, job polling, and result submission
+- internal network scan scheduling and on-demand scans
+- vulnerability tracking, alerts, remediation workflow, and reporting
 
 ## Environment setup
 
@@ -32,18 +34,9 @@ AETHERSCAN_JWT_SECRET=change-me-in-real-deployments
 ```bash
 npm install
 npm run mongo:check
-npm run mongo:import
 npm run dev -- --port 3001
-```
-
-## Data import
-
-By default, `npm run mongo:import` imports from the original app JSON database at `../.data/aetherscan.json`.
-
-You can also import a specific file:
-
-```bash
-node ./scripts/import-json-to-mongo.mjs ./path/to/aetherscan.json
+npm run build
+npm run lint
 ```
 
 ## Health check
