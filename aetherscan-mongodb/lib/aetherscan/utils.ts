@@ -1,5 +1,20 @@
 import { createHash, randomBytes } from "node:crypto"
 
+const COMMON_PASSWORDS = new Set([
+  "12345678",
+  "123456789",
+  "1234567890",
+  "password",
+  "password1",
+  "password123",
+  "admin123",
+  "admin123!",
+  "qwerty123",
+  "welcome123",
+  "letmein123",
+  "iloveyou123",
+])
+
 export function nowIso() {
   return new Date().toISOString()
 }
@@ -10,6 +25,36 @@ export function makeId(prefix: string) {
 
 export function hashPassword(password: string) {
   return createHash("sha256").update(password).digest("hex")
+}
+
+export function validatePasswordStrength(password: string) {
+  if (password.length < 8) {
+    return "Password must be at least 8 characters"
+  }
+
+  if (!/[a-z]/.test(password) || !/[A-Z]/.test(password) || !/\d/.test(password) || !/[^A-Za-z0-9]/.test(password)) {
+    return "Password must include uppercase, lowercase, number, and special character"
+  }
+
+  if (/\s/.test(password)) {
+    return "Password must not contain spaces"
+  }
+
+  const normalized = password.toLowerCase()
+  if (COMMON_PASSWORDS.has(normalized)) {
+    return "Password is too common. Choose a less predictable password"
+  }
+
+  if (/^(.)\1+$/.test(password)) {
+    return "Password cannot be made of the same character repeatedly"
+  }
+
+  const hasAscendingSequence = /(?:0123|1234|2345|3456|4567|5678|6789|7890|abcd|bcde|cdef|defg|efgh|fghi|ghij|hijk|ijkl|jklm|klmn|lmno|mnop|nopq|opqr|pqrs|qrst|rstu|stuv|tuvw|uvwx|vwxy|wxyz|qwer|asdf|zxcv)/i.test(password)
+  if (hasAscendingSequence) {
+    return "Password must not contain obvious sequences"
+  }
+
+  return null
 }
 
 export function addHours(date: Date, hours: number) {

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { requireUser } from "@/lib/aetherscan/auth"
 import { updateDatabase } from "@/lib/aetherscan/store"
-import { hashPassword } from "@/lib/aetherscan/utils"
+import { hashPassword, validatePasswordStrength } from "@/lib/aetherscan/utils"
 
 export async function POST(request: Request) {
   const auth = await requireUser(request)
@@ -10,8 +10,9 @@ export async function POST(request: Request) {
   const currentPassword = String(body.currentPassword ?? "")
   const newPassword = String(body.newPassword ?? "")
 
-  if (newPassword.length < 8) {
-    return NextResponse.json({ error: "New password must be at least 8 characters" }, { status: 400 })
+  const passwordError = validatePasswordStrength(newPassword)
+  if (passwordError) {
+    return NextResponse.json({ error: passwordError }, { status: 400 })
   }
 
   if (auth.user.passwordHash !== hashPassword(currentPassword)) {
