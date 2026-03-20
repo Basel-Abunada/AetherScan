@@ -33,7 +33,7 @@ export async function PATCH(request: Request) {
 
     if (body.profile) {
       if (body.profile.name) user.name = String(body.profile.name)
-      if (body.profile.email) user.email = String(body.profile.email).toLowerCase()
+      if (auth.user?.role === "admin" && body.profile.email) user.email = String(body.profile.email).toLowerCase()
       if (body.profile.department !== undefined) user.department = String(body.profile.department)
       if (["light", "dark", "system"].includes(body.profile.theme)) user.theme = body.profile.theme
       if (body.profile.timezone) user.timezone = String(body.profile.timezone)

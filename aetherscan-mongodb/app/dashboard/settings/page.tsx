@@ -286,7 +286,14 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" type="email" value={profile.email} onChange={(event) => setProfile((current) => ({ ...current, email: event.target.value }))} />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={profile.email}
+                    onChange={(event) => setProfile((current) => ({ ...current, email: event.target.value }))}
+                    disabled={!isAdmin}
+                  />
+                  {!isAdmin ? <p className="text-xs text-muted-foreground">Only administrators can change the email address.</p> : null}
                 </div>
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
