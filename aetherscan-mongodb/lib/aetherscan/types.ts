@@ -106,6 +106,8 @@ export interface RiskFinding {
   title: string
   cve?: string
   cveUrl?: string
+  cwe?: string
+  cweUrl?: string
   service: string
   port: number
   riskLevel: RiskLevel

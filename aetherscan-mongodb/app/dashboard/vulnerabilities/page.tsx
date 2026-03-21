@@ -120,7 +120,12 @@ export default function VulnerabilitiesPage() {
                             {vuln.cve}
                             <ExternalLink className="size-3" />
                           </a>
-                        ) : <span className="text-muted-foreground">No mapped CVE</span>}
+                        ) : vuln.cwe ? (
+                          <a href={vuln.cweUrl ?? `https://cwe.mitre.org/data/definitions/${vuln.cwe.replace(/^CWE-/, "")}.html`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-primary hover:underline">
+                            {vuln.cwe}
+                            <ExternalLink className="size-3" />
+                          </a>
+                        ) : <span className="text-muted-foreground">No mapped reference</span>}
                         {vuln.referenceUrl ? (
                           <a href={vuln.referenceUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-muted-foreground hover:text-foreground hover:underline">
                             Reference
@@ -183,6 +188,14 @@ export default function VulnerabilitiesPage() {
                     <p className="font-medium">Mapped CVE</p>
                     <a href={selectedVuln.cveUrl ?? `https://nvd.nist.gov/vuln/detail/${selectedVuln.cve}`} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-primary hover:underline">
                       {selectedVuln.cve}
+                      <ExternalLink className="size-3" />
+                    </a>
+                  </div>
+                ) : selectedVuln.cwe ? (
+                  <div className="mt-3 rounded-md border bg-muted/40 p-3 text-sm">
+                    <p className="font-medium">Mapped CWE</p>
+                    <a href={selectedVuln.cweUrl ?? `https://cwe.mitre.org/data/definitions/${selectedVuln.cwe.replace(/^CWE-/, "")}.html`} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex items-center gap-1 text-primary hover:underline">
+                      {selectedVuln.cwe}
                       <ExternalLink className="size-3" />
                     </a>
                   </div>

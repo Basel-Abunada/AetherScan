@@ -1,7 +1,13 @@
 import { NextResponse } from "next/server"
 import { getVisibleFindings } from "@/lib/aetherscan/access"
 import { requireUser } from "@/lib/aetherscan/auth"
+import { inferCweFallback, inferCweUrl } from "@/lib/aetherscan/risk-engine"
 import { readDatabase } from "@/lib/aetherscan/store"
+
+function primaryTarget(target?: string) {
+  if (!target) return "unknown"
+  return target.trim().split(/\s+/)[0] || "unknown"
+}
 
 export async function GET(request: Request) {
   const auth = await requireUser(request)
@@ -14,6 +20,7 @@ export async function GET(request: Request) {
   const database = await readDatabase()
 
   const visibleAssets = new Map(database.assets.map((asset) => [asset.id, asset]))
+  const visibleScans = new Map(database.scans.map((scan) => [scan.id, scan]))
   const findings = getVisibleFindings(database, auth.user)
     .filter((finding) => (risk ? finding.riskLevel === risk : true))
     .filter((finding) => (status ? finding.status === status : true))
@@ -26,10 +33,15 @@ export async function GET(request: Request) {
       || finding.recommendation.toLowerCase().includes(q))
     .map((finding) => {
       const asset = visibleAssets.get(finding.assetId)
+      const scan = visibleScans.get(finding.scanId)
+      const fallbackTarget = primaryTarget(scan?.target)
+      const fallbackCwe = inferCweFallback(finding)
       return {
         ...finding,
-        affectedHost: asset?.ipAddress ?? finding.assetId,
-        hostname: asset?.hostname ?? "unknown",
+        cwe: finding.cwe ?? fallbackCwe ?? undefined,
+        cweUrl: finding.cweUrl ?? inferCweUrl(fallbackCwe),
+        affectedHost: asset?.ipAddress ?? fallbackTarget,
+        hostname: asset?.hostname ?? fallbackTarget,
       }
     })
 

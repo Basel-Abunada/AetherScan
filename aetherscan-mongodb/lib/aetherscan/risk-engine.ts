@@ -13,6 +13,7 @@ type FindingTemplate = {
   title: string
   riskLevel: RiskLevel
   cve?: string
+  cwe?: string
   source: string
   referenceUrl?: string
   description: (context: ServiceContext) => string
@@ -25,6 +26,7 @@ type ScriptFindingTemplate = {
   title: string
   riskLevel: RiskLevel
   cve?: string
+  cwe?: string
   source: string
   referenceUrl?: string
   description: (output: string, serviceLabel: string) => string
@@ -33,6 +35,10 @@ type ScriptFindingTemplate = {
 
 function nvdUrl(cve: string) {
   return `https://nvd.nist.gov/vuln/detail/${cve}`
+}
+
+function cweUrl(cwe: string) {
+  return `https://cwe.mitre.org/data/definitions/${cwe.replace(/^CWE-/, "")}.html`
 }
 
 function normalize(value?: string | number | boolean | null) {
@@ -157,7 +163,9 @@ const templates: FindingTemplate[] = [
   {
     title: "TFTP Service Enabled",
     riskLevel: "high",
+    cwe: "CWE-306",
     source: "CIS / Vendor Hardening Guides",
+    referenceUrl: cweUrl("CWE-306"),
     match: (context) => context.port === 69 || includesAny(context.fingerprint, ["tftp"]),
     description: (context) => `${formatService(context)} is available over TFTP, which provides no native authentication and is often abused to retrieve or overwrite sensitive configuration files.`,
     recommendation: () => "Disable TFTP unless it is operationally required, isolate it on a management network, and strictly limit access to approved hosts only.",
@@ -175,7 +183,9 @@ const templates: FindingTemplate[] = [
   {
     title: "NetBIOS Exposure Detected",
     riskLevel: "medium",
+    cwe: "CWE-200",
     source: "CIS / Microsoft Hardening Guidance",
+    referenceUrl: cweUrl("CWE-200"),
     match: (context) => [137, 138, 139].includes(context.port) || includesAny(context.fingerprint, ["netbios"]),
     description: (context) => `${formatService(context)} exposes NetBIOS services that can leak hostnames, shares, and legacy Windows networking information useful for reconnaissance.`,
     recommendation: () => "Disable NetBIOS where it is not needed, prefer modern name resolution methods, and filter these ports at the network boundary.",
@@ -203,7 +213,9 @@ const templates: FindingTemplate[] = [
   {
     title: "VNC Service Exposed",
     riskLevel: "high",
+    cwe: "CWE-306",
     source: "CIS / Vendor Guidance",
+    referenceUrl: cweUrl("CWE-306"),
     match: (context) => [5900, 5901, 5902].includes(context.port) || includesAny(context.fingerprint, ["vnc", "rfb"]),
     description: (context) => `${formatService(context)} is reachable over VNC. VNC frequently lacks strong transport security and should not be exposed without segmentation or tunneling.`,
     recommendation: () => "Disable direct VNC exposure, tunnel access through VPN or SSH, and require strong unique credentials with access control lists.",
@@ -211,7 +223,9 @@ const templates: FindingTemplate[] = [
   {
     title: "Unencrypted HTTP Service",
     riskLevel: "medium",
+    cwe: "CWE-319",
     source: "OWASP / CIS",
+    referenceUrl: cweUrl("CWE-319"),
     match: (context) => context.port === 80 || context.name === "http",
     description: (context) => `${formatService(context)} is available over HTTP without transport encryption, increasing the risk of credential interception, session hijacking, and header-based information leakage.`,
     recommendation: () => "Redirect users to HTTPS, remove default content, harden response headers, and ensure sensitive interfaces are not exposed over plaintext HTTP.",
@@ -219,7 +233,9 @@ const templates: FindingTemplate[] = [
   {
     title: "TLS Configuration Review Needed",
     riskLevel: "medium",
+    cwe: "CWE-326",
     source: "NIST / CIS",
+    referenceUrl: cweUrl("CWE-326"),
     match: (context) => context.port === 443 || includesAny(context.fingerprint, ["https", "ssl/http", "tls"]),
     description: (context) => `${formatService(context)} uses TLS and should be reviewed for deprecated protocol support, weak ciphers, and certificate hygiene issues.`,
     recommendation: () => "Allow only TLS 1.2 or newer, disable deprecated ciphers, and validate certificate trust, expiry, and hostname coverage.",
@@ -257,7 +273,9 @@ const templates: FindingTemplate[] = [
   {
     title: "SMTP Service Exposure",
     riskLevel: "medium",
+    cwe: "CWE-284",
     source: "CIS / Vendor Mail Security Guidance",
+    referenceUrl: cweUrl("CWE-284"),
     match: (context) => [25, 465, 587].includes(context.port) || includesAny(context.fingerprint, ["smtp", "submission"]),
     description: (context) => `${formatService(context)} exposes SMTP services that may be abused for relay testing, banner enumeration, or user discovery if not hardened.`,
     recommendation: () => "Confirm open relay is disabled, require authentication where appropriate, and restrict SMTP management to approved hosts.",
@@ -265,7 +283,9 @@ const templates: FindingTemplate[] = [
   {
     title: "Legacy Mail Access Service Review",
     riskLevel: "low",
+    cwe: "CWE-522",
     source: "Email Security Best Practices",
+    referenceUrl: cweUrl("CWE-522"),
     match: (context) => [110, 143, 993, 995].includes(context.port) || includesAny(context.fingerprint, ["imap", "pop3"]),
     description: (context) => `${formatService(context)} provides mailbox access and should be reviewed to ensure legacy protocols and weak authentication methods are not still enabled.`,
     recommendation: () => "Require TLS, disable legacy authentication methods, and migrate users away from unnecessary POP3/legacy mail access services.",
@@ -273,7 +293,9 @@ const templates: FindingTemplate[] = [
   {
     title: "DNS Service Zone Transfer Review",
     riskLevel: "low",
+    cwe: "CWE-200",
     source: "CIS Benchmarks",
+    referenceUrl: cweUrl("CWE-200"),
     match: (context) => context.port === 53 || includesAny(context.fingerprint, ["domain", "dns", "bind"]),
     description: (context) => `${formatService(context)} is providing DNS services and may expose internal host naming and topology if zone transfers or recursion are loosely configured.`,
     recommendation: () => "Restrict zone transfers to approved secondary DNS servers only and audit recursion, split-horizon, and external exposure settings.",
@@ -291,7 +313,9 @@ const templates: FindingTemplate[] = [
   {
     title: "SNMP Configuration Risk",
     riskLevel: "low",
+    cwe: "CWE-798",
     source: "CISA / CIS",
+    referenceUrl: cweUrl("CWE-798"),
     match: (context) => context.port === 161 || includesAny(context.fingerprint, ["snmp"]),
     description: (context) => `${formatService(context)} exposes SNMP, a protocol frequently left with default community strings or broad management access.`,
     recommendation: () => "Use SNMPv3 where possible, rotate community strings, and limit access to trusted management stations only.",
@@ -299,7 +323,9 @@ const templates: FindingTemplate[] = [
   {
     title: "LDAP Directory Exposure",
     riskLevel: "medium",
+    cwe: "CWE-200",
     source: "CIS / Directory Service Hardening",
+    referenceUrl: cweUrl("CWE-200"),
     match: (context) => [389, 636].includes(context.port) || includesAny(context.fingerprint, ["ldap"]),
     description: (context) => `${formatService(context)} exposes directory services that can reveal authentication endpoints and internal naming metadata when broadly reachable.`,
     recommendation: () => "Restrict LDAP to trusted clients, require LDAPS or StartTLS, and disable anonymous binds unless there is a documented business need.",
@@ -307,7 +333,9 @@ const templates: FindingTemplate[] = [
   {
     title: "Kerberos Service Exposure",
     riskLevel: "medium",
+    cwe: "CWE-284",
     source: "Microsoft / Active Directory Hardening Guidance",
+    referenceUrl: cweUrl("CWE-284"),
     match: (context) => [88, 464].includes(context.port) || includesAny(context.fingerprint, ["kerberos"]),
     description: (context) => `${formatService(context)} is part of identity infrastructure and should remain segmented to reduce the attack surface against central authentication services.`,
     recommendation: () => "Limit Kerberos access to domain-joined systems, monitor failures for brute-force patterns, and segment identity services from general user networks.",
@@ -315,7 +343,9 @@ const templates: FindingTemplate[] = [
   {
     title: "NFS Service Exposed",
     riskLevel: "medium",
+    cwe: "CWE-284",
     source: "CIS / Linux Hardening Guidance",
+    referenceUrl: cweUrl("CWE-284"),
     match: (context) => context.port === 2049 || includesAny(context.fingerprint, ["nfs"]),
     description: (context) => `${formatService(context)} provides NFS access and can expose sensitive file systems when export permissions are broad or unmanaged.`,
     recommendation: () => "Restrict exports to approved clients, enforce least privilege, and review share permissions and root squashing regularly.",
@@ -323,7 +353,9 @@ const templates: FindingTemplate[] = [
   {
     title: "RPC Service Exposed",
     riskLevel: "medium",
+    cwe: "CWE-668",
     source: "CIS Benchmarks",
+    referenceUrl: cweUrl("CWE-668"),
     match: (context) => context.port === 111 || includesAny(context.fingerprint, ["rpc", "portmapper"]),
     description: (context) => `${formatService(context)} exposes RPC services that can reveal additional service mappings and increase the attack surface for lateral movement.`,
     recommendation: () => "Disable unused RPC services and limit exposure using host firewalls and network segmentation.",
@@ -371,7 +403,9 @@ const templates: FindingTemplate[] = [
   {
     title: "Memcached Service Exposed",
     riskLevel: "high",
+    cwe: "CWE-284",
     source: "CISA / Vendor Guidance",
+    referenceUrl: cweUrl("CWE-284"),
     match: (context) => context.port === 11211 || includesAny(context.fingerprint, ["memcached"]),
     description: (context) => `${formatService(context)} exposes Memcached, which can leak cached data and has been abused in amplification attacks.`,
     recommendation: () => "Disable public exposure, bind to internal interfaces only, and restrict access using host firewall rules.",
@@ -429,7 +463,9 @@ const templates: FindingTemplate[] = [
   {
     title: "VoIP Signaling Exposure",
     riskLevel: "low",
+    cwe: "CWE-200",
     source: "VoIP Hardening Guidance",
+    referenceUrl: cweUrl("CWE-200"),
     match: (context) => [5060, 5061].includes(context.port) || includesAny(context.fingerprint, ["sip"]),
     description: (context) => `${formatService(context)} exposes SIP signaling that can leak PBX metadata and enable toll fraud or user enumeration when weakly configured.`,
     recommendation: () => "Restrict SIP to authorized peers, enable TLS or SRTP where supported, and monitor registration anomalies and abuse patterns.",
@@ -566,6 +602,8 @@ function buildScriptFinding({
       title: knownTemplate.title,
       cve: knownTemplate.cve,
       cveUrl: knownTemplate.cve ? nvdUrl(knownTemplate.cve) : undefined,
+      cwe: knownTemplate.cwe,
+      cweUrl: knownTemplate.cwe ? cweUrl(knownTemplate.cwe) : undefined,
       service,
       port,
       riskLevel: knownTemplate.riskLevel,
@@ -592,6 +630,8 @@ function buildScriptFinding({
     title: genericTitle,
     cve: genericCve,
     cveUrl: genericCve ? nvdUrl(genericCve) : undefined,
+    cwe: genericCve ? undefined : "CWE-693",
+    cweUrl: genericCve ? undefined : cweUrl("CWE-693"),
     service,
     port,
     riskLevel: deriveGenericRisk(output),
@@ -627,6 +667,8 @@ export function buildFindingsForAssets(scanId: string, assets: Asset[]): RiskFin
           title: template.title,
           cve: template.cve,
           cveUrl: template.cve ? nvdUrl(template.cve) : undefined,
+          cwe: template.cwe,
+          cweUrl: template.cwe ? cweUrl(template.cwe) : undefined,
           service: service.name,
           port: service.port,
           riskLevel: template.riskLevel,
@@ -678,6 +720,30 @@ export function summarizeFindings(findings: RiskFinding[]) {
     },
     { high: 0, medium: 0, low: 0 },
   )
+}
+
+const fallbackCweByTitle: Array<{ match: RegExp; cwe: string }> = [
+  { match: /rpc service exposed/i, cwe: "CWE-668" },
+  { match: /netbios exposure detected/i, cwe: "CWE-200" },
+  { match: /tftp service enabled/i, cwe: "CWE-306" },
+  { match: /vnc service exposed/i, cwe: "CWE-306" },
+  { match: /unencrypted http service/i, cwe: "CWE-319" },
+  { match: /tls configuration review needed/i, cwe: "CWE-326" },
+  { match: /dns service zone transfer review/i, cwe: "CWE-200" },
+  { match: /snmp configuration risk/i, cwe: "CWE-798" },
+  { match: /ldap directory exposure/i, cwe: "CWE-200" },
+  { match: /kerberos service exposure/i, cwe: "CWE-284" },
+  { match: /nfs service exposed/i, cwe: "CWE-284" },
+]
+
+export function inferCweFallback(finding: Pick<RiskFinding, "title" | "cve" | "cwe">) {
+  if (finding.cve) return null
+  if (finding.cwe) return finding.cwe
+  return fallbackCweByTitle.find((entry) => entry.match.test(finding.title))?.cwe ?? "CWE-693"
+}
+
+export function inferCweUrl(cwe?: string | null) {
+  return cwe ? cweUrl(cwe) : undefined
 }
 
 
