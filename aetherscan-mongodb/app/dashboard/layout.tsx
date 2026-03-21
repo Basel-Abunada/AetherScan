@@ -32,7 +32,7 @@ const pageTitles: Record<string, string> = {
 }
 
 const pageAccess: Partial<Record<string, readonly UserRole[]>> = {
-  "/dashboard/scans": ["admin", "engineer"],
+  "/dashboard/scans": ["admin", "engineer", "technician"],
   "/dashboard/agents": ["admin", "engineer"],
   "/dashboard/users": ["admin"],
 }

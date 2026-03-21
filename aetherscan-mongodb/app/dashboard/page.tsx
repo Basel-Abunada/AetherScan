@@ -147,7 +147,7 @@ export default function DashboardPage() {
   const overviewDescription = userRole === "admin"
     ? "Overview of the full platform security posture and recent scan activity"
     : "Overview of your assigned security activity, findings, and recent scans"
-  const canManageScans = userRole === "admin" || userRole === "engineer"
+  const canManageScans = true
   const alertFeedTitle = userRole === "admin" ? "Alert Feed" : "My Alert Feed"
   const alertFeedDescription = userRole === "admin"
     ? "Real-time security alerts and scan notifications"

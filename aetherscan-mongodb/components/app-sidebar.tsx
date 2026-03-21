@@ -52,7 +52,7 @@ type NavItem = {
 
 const mainNavItems: readonly NavItem[] = [
   { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { title: "Scan Schedules", href: "/dashboard/scans", icon: Calendar, roles: ["admin", "engineer"] },
+  { title: "Scan Schedules", href: "/dashboard/scans", icon: Calendar, roles: ["admin", "engineer", "technician"] },
   { title: "Scan Results", href: "/dashboard/results", icon: Scan },
   { title: "Network Assets", href: "/dashboard/assets", icon: Monitor },
   { title: "Vulnerabilities", href: "/dashboard/vulnerabilities", icon: Shield },
