@@ -5,7 +5,7 @@ import { updateDatabase } from "@/lib/aetherscan/store"
 type Params = { params: Promise<{ id: string }> }
 
 export async function PATCH(request: Request, { params }: Params) {
-  const auth = await requireUserRole(request, ["admin", "engineer"])
+  const auth = await requireUserRole(request, ["admin", "engineer", "technician"])
   if (!auth.user) return auth.response
   const { id } = await params
   const body = await request.json()
@@ -28,7 +28,7 @@ export async function PATCH(request: Request, { params }: Params) {
 }
 
 export async function DELETE(request: Request, { params }: Params) {
-  const auth = await requireUserRole(request, ["admin", "engineer"])
+  const auth = await requireUserRole(request, ["admin", "engineer", "technician"])
   if (!auth.user) return auth.response
   const { id } = await params
   const removed = await updateDatabase((database) => {

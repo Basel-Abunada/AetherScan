@@ -5,14 +5,14 @@ import { readDatabase, updateDatabase } from "@/lib/aetherscan/store"
 import { addHours, makeId } from "@/lib/aetherscan/utils"
 
 export async function GET(request: Request) {
-  const auth = await requireUserRole(request, ["admin", "engineer"])
+  const auth = await requireUserRole(request, ["admin", "engineer", "technician"])
   if (!auth.user) return auth.response
   const database = await readDatabase()
   return NextResponse.json(getVisibleSchedules(database, auth.user))
 }
 
 export async function POST(request: Request) {
-  const auth = await requireUserRole(request, ["admin", "engineer"])
+  const auth = await requireUserRole(request, ["admin", "engineer", "technician"])
   if (!auth.user) return auth.response
 
   const body = await request.json()
