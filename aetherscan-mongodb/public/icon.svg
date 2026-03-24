@@ -1,26 +1,33 @@
-<svg width="180" height="180" viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <style>
-    @media (prefers-color-scheme: light) {
-      .background { fill: black; }
-      .foreground { fill: white; }
-    }
-    @media (prefers-color-scheme: dark) {
-      .background { fill: white; }
-      .foreground { fill: black; }
-    }
-  </style>
-  <g clip-path="url(#clip0_7960_43945)">
-    <rect class="background" width="180" height="180" rx="37" />
-    <g style="transform: scale(95%); transform-origin: center">
-      <path class="foreground"
-        d="M101.141 53H136.632C151.023 53 162.689 64.6662 162.689 79.0573V112.904H148.112V79.0573C148.112 78.7105 148.098 78.3662 148.072 78.0251L112.581 112.898C112.701 112.902 112.821 112.904 112.941 112.904H148.112V126.672H112.941C98.5504 126.672 86.5638 114.891 86.5638 100.5V66.7434H101.141V100.5C101.141 101.15 101.191 101.792 101.289 102.422L137.56 66.7816C137.255 66.7563 136.945 66.7434 136.632 66.7434H101.141V53Z" />
-      <path class="foreground"
-        d="M65.2926 124.136L14 66.7372H34.6355L64.7495 100.436V66.7372H80.1365V118.47C80.1365 126.278 70.4953 129.958 65.2926 124.136Z" />
-    </g>
-  </g>
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <clipPath id="clip0_7960_43945">
-      <rect width="180" height="180" fill="white" />
+    <linearGradient id="shieldLeft" x1="116" y1="96" x2="356" y2="392" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2A9BEA" />
+      <stop offset="1" stop-color="#3B3AAE" />
+    </linearGradient>
+    <linearGradient id="shieldRight" x1="274" y1="72" x2="424" y2="330" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#5251D1" />
+      <stop offset="1" stop-color="#1FA3D7" />
+    </linearGradient>
+    <linearGradient id="lowerLeft" x1="138" y1="286" x2="278" y2="472" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7C42D7" />
+      <stop offset="1" stop-color="#3438A5" />
+    </linearGradient>
+    <linearGradient id="lowerRight" x1="270" y1="288" x2="356" y2="468" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4D3BB0" />
+      <stop offset="1" stop-color="#6837B8" />
+    </linearGradient>
+    <clipPath id="topShieldClip">
+      <path d="M255.31 72C221.68 102.4 169.1 113.84 116 106.31V200.2C116 309.84 177.07 384.58 255.31 424C333.55 384.58 394.62 309.84 394.62 200.2V106.31C341.52 113.84 288.94 102.4 255.31 72Z" />
     </clipPath>
   </defs>
+
+  <g clip-path="url(#topShieldClip)">
+    <path d="M255.31 72C221.68 102.4 169.1 113.84 116 106.31V200.2C116 309.84 177.07 384.58 255.31 424C333.55 384.58 394.62 309.84 394.62 200.2V106.31C341.52 113.84 288.94 102.4 255.31 72Z" fill="url(#shieldLeft)" />
+    <rect x="255" y="58" width="180" height="386" fill="url(#shieldRight)" />
+  </g>
+
+  <path d="M118 288.92L183.69 356.55C233.08 407.39 302.31 433 373.02 427.05L315.57 488C279.42 471.62 237.17 443.73 205.9 403.41C166.64 352.79 138.55 296.89 118 288.92Z" fill="url(#lowerLeft)" />
+  <path d="M255.72 355.18L374.74 427.05L315.57 488C292.73 477.65 272.23 465.46 255.72 452.38V355.18Z" fill="url(#lowerRight)" />
+
+  <path d="M106 198C173.86 272.37 235.83 322.2 305.89 348.29C338.95 360.59 373.75 366.19 407.37 364.42L369.15 413C338.39 414.58 306.82 409.08 276.1 397.65C196.28 367.93 127.26 309.91 69 231.16L106 198Z" fill="#050505" />
 </svg>
