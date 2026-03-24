@@ -1,39 +1,42 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="bg" x1="96" y1="80" x2="416" y2="432" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#2EA5FF" />
-      <stop offset="1" stop-color="#2954E8" />
+    <linearGradient id="bodyGrad" x1="176" y1="266" x2="336" y2="380" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#20B7DB" />
+      <stop offset="1" stop-color="#1EC8DE" />
     </linearGradient>
-    <linearGradient id="shieldLeft" x1="162" y1="160" x2="284" y2="314" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#2A9BEA" />
-      <stop offset="1" stop-color="#3B3AAE" />
+    <linearGradient id="bodyShade" x1="256" y1="252" x2="320" y2="374" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1DB0D7" />
+      <stop offset="1" stop-color="#12C4E0" />
     </linearGradient>
-    <linearGradient id="shieldRight" x1="255" y1="144" x2="360" y2="286" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#5251D1" />
-      <stop offset="1" stop-color="#1FA3D7" />
-    </linearGradient>
-    <linearGradient id="lowerLeft" x1="170" y1="258" x2="266" y2="388" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#7C42D7" />
-      <stop offset="1" stop-color="#3438A5" />
-    </linearGradient>
-    <linearGradient id="lowerRight" x1="257" y1="260" x2="322" y2="390" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#4D3BB0" />
-      <stop offset="1" stop-color="#6837B8" />
-    </linearGradient>
-    <clipPath id="topShieldClip">
-      <path d="M255.31 145C229.91 167.96 190.19 176.6 150.08 170.91V241.82C150.08 324.67 196.21 381.17 255.31 410.97C314.41 381.17 360.54 324.67 360.54 241.82V170.91C320.43 176.6 280.71 167.96 255.31 145Z" />
-    </clipPath>
   </defs>
 
-  <rect x="96" y="80" width="320" height="320" rx="68" fill="url(#bg)" />
+  <path d="M191 162V121L177 111V93L191 83L205 93V111L198 117V162H191Z" fill="#16245A"/>
+  <path d="M160 186V150L146 140V122L160 112L174 122V140L167 146V186H160Z" fill="#16245A"/>
+  <path d="M132 238V202L118 192V174L132 164L146 174V192L139 198V238H132Z" fill="#16245A"/>
+  <path d="M321 162V121L335 111V93L321 83L307 93V111L314 117V162H321Z" fill="#16245A"/>
+  <path d="M352 186V150L366 140V122L352 112L338 122V140L345 146V186H352Z" fill="#16245A"/>
+  <path d="M380 238V202L394 192V174L380 164L366 174V192L373 198V238H380Z" fill="#16245A"/>
 
-  <g clip-path="url(#topShieldClip)">
-    <path d="M255.31 145C229.91 167.96 190.19 176.6 150.08 170.91V241.82C150.08 324.67 196.21 381.17 255.31 410.97C314.41 381.17 360.54 324.67 360.54 241.82V170.91C320.43 176.6 280.71 167.96 255.31 145Z" fill="url(#shieldLeft)" />
-    <rect x="255" y="136" width="128" height="280" fill="url(#shieldRight)" />
-  </g>
+  <circle cx="191" cy="97" r="11" stroke="#16245A" stroke-width="6"/>
+  <circle cx="160" cy="126" r="11" stroke="#16245A" stroke-width="6"/>
+  <circle cx="132" cy="178" r="11" stroke="#16245A" stroke-width="6"/>
+  <circle cx="321" cy="97" r="11" stroke="#16245A" stroke-width="6"/>
+  <circle cx="352" cy="126" r="11" stroke="#16245A" stroke-width="6"/>
+  <circle cx="380" cy="178" r="11" stroke="#16245A" stroke-width="6"/>
 
-  <path d="M151.83 300.47L201.49 351.59C238.84 390.03 291.18 409.4 344.63 404.9L301.2 451C273.88 438.62 241.95 417.54 218.31 387.07C188.64 348.82 167.41 306.58 151.83 300.47Z" fill="url(#lowerLeft)" />
-  <path d="M255.62 350.55L345.93 405L301.2 451C283.87 443.15 268.31 433.91 255.62 423.99V350.55Z" fill="url(#lowerRight)" />
+  <path d="M198 223C198 191.52 223.52 166 255 166H257C288.48 166 314 191.52 314 223V266H198V223Z" fill="#1B2860"/>
+  <path d="M223 209C223 189.12 239.12 173 259 173C278.88 173 295 189.12 295 209V223H223V209Z" fill="#1B2860"/>
+  <path d="M223 202C241.83 196.28 260.48 196.28 279 202L276 226C262.08 222.22 248.08 222.22 234 226L223 202Z" fill="#F6AE34"/>
 
-  <path d="M143 239.5C194.49 295.98 241.52 333.83 294.66 353.62C319.73 362.95 346.12 367.19 371.63 365.85L342.62 402.75C319.28 403.95 295.33 399.78 272.02 391.11C211.45 368.56 159.08 324.55 114.88 264.72L143 239.5Z" fill="#050505" />
+  <path d="M176 266H336L355 294V367H157V294L176 266Z" fill="#1B2860"/>
+  <path d="M176 266H336L325 367H187L176 266Z" fill="url(#bodyGrad)"/>
+  <path d="M278 266H336L325 367H223L278 266Z" fill="url(#bodyShade)"/>
+  <circle cx="252" cy="289" r="9" fill="#F6AE34"/>
+
+  <rect x="139" y="303" width="22" height="10" fill="#16245A"/>
+  <rect x="351" y="303" width="22" height="10" fill="#16245A"/>
+  <path d="M111 304L118 292H132L139 304L132 316H118L111 304Z" fill="#F6AE34"/>
+  <path d="M373 304L380 292H394L401 304L394 316H380L373 304Z" fill="#F6AE34"/>
+  <path d="M111 333L118 321H132L139 333L132 345H118L111 333Z" fill="#1DB8DA"/>
+  <path d="M373 333L380 321H394L401 333L394 345H380L373 333Z" fill="#1DB8DA"/>
 </svg>
