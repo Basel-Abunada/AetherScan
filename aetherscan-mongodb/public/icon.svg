@@ -1,33 +1,39 @@
 <svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
   <defs>
-    <linearGradient id="shieldLeft" x1="116" y1="96" x2="356" y2="392" gradientUnits="userSpaceOnUse">
+    <linearGradient id="bg" x1="96" y1="80" x2="416" y2="432" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#2EA5FF" />
+      <stop offset="1" stop-color="#2954E8" />
+    </linearGradient>
+    <linearGradient id="shieldLeft" x1="162" y1="160" x2="284" y2="314" gradientUnits="userSpaceOnUse">
       <stop stop-color="#2A9BEA" />
       <stop offset="1" stop-color="#3B3AAE" />
     </linearGradient>
-    <linearGradient id="shieldRight" x1="274" y1="72" x2="424" y2="330" gradientUnits="userSpaceOnUse">
+    <linearGradient id="shieldRight" x1="255" y1="144" x2="360" y2="286" gradientUnits="userSpaceOnUse">
       <stop stop-color="#5251D1" />
       <stop offset="1" stop-color="#1FA3D7" />
     </linearGradient>
-    <linearGradient id="lowerLeft" x1="138" y1="286" x2="278" y2="472" gradientUnits="userSpaceOnUse">
+    <linearGradient id="lowerLeft" x1="170" y1="258" x2="266" y2="388" gradientUnits="userSpaceOnUse">
       <stop stop-color="#7C42D7" />
       <stop offset="1" stop-color="#3438A5" />
     </linearGradient>
-    <linearGradient id="lowerRight" x1="270" y1="288" x2="356" y2="468" gradientUnits="userSpaceOnUse">
+    <linearGradient id="lowerRight" x1="257" y1="260" x2="322" y2="390" gradientUnits="userSpaceOnUse">
       <stop stop-color="#4D3BB0" />
       <stop offset="1" stop-color="#6837B8" />
     </linearGradient>
     <clipPath id="topShieldClip">
-      <path d="M255.31 72C221.68 102.4 169.1 113.84 116 106.31V200.2C116 309.84 177.07 384.58 255.31 424C333.55 384.58 394.62 309.84 394.62 200.2V106.31C341.52 113.84 288.94 102.4 255.31 72Z" />
+      <path d="M255.31 145C229.91 167.96 190.19 176.6 150.08 170.91V241.82C150.08 324.67 196.21 381.17 255.31 410.97C314.41 381.17 360.54 324.67 360.54 241.82V170.91C320.43 176.6 280.71 167.96 255.31 145Z" />
     </clipPath>
   </defs>
 
+  <rect x="96" y="80" width="320" height="320" rx="68" fill="url(#bg)" />
+
   <g clip-path="url(#topShieldClip)">
-    <path d="M255.31 72C221.68 102.4 169.1 113.84 116 106.31V200.2C116 309.84 177.07 384.58 255.31 424C333.55 384.58 394.62 309.84 394.62 200.2V106.31C341.52 113.84 288.94 102.4 255.31 72Z" fill="url(#shieldLeft)" />
-    <rect x="255" y="58" width="180" height="386" fill="url(#shieldRight)" />
+    <path d="M255.31 145C229.91 167.96 190.19 176.6 150.08 170.91V241.82C150.08 324.67 196.21 381.17 255.31 410.97C314.41 381.17 360.54 324.67 360.54 241.82V170.91C320.43 176.6 280.71 167.96 255.31 145Z" fill="url(#shieldLeft)" />
+    <rect x="255" y="136" width="128" height="280" fill="url(#shieldRight)" />
   </g>
 
-  <path d="M118 288.92L183.69 356.55C233.08 407.39 302.31 433 373.02 427.05L315.57 488C279.42 471.62 237.17 443.73 205.9 403.41C166.64 352.79 138.55 296.89 118 288.92Z" fill="url(#lowerLeft)" />
-  <path d="M255.72 355.18L374.74 427.05L315.57 488C292.73 477.65 272.23 465.46 255.72 452.38V355.18Z" fill="url(#lowerRight)" />
+  <path d="M151.83 300.47L201.49 351.59C238.84 390.03 291.18 409.4 344.63 404.9L301.2 451C273.88 438.62 241.95 417.54 218.31 387.07C188.64 348.82 167.41 306.58 151.83 300.47Z" fill="url(#lowerLeft)" />
+  <path d="M255.62 350.55L345.93 405L301.2 451C283.87 443.15 268.31 433.91 255.62 423.99V350.55Z" fill="url(#lowerRight)" />
 
-  <path d="M106 198C173.86 272.37 235.83 322.2 305.89 348.29C338.95 360.59 373.75 366.19 407.37 364.42L369.15 413C338.39 414.58 306.82 409.08 276.1 397.65C196.28 367.93 127.26 309.91 69 231.16L106 198Z" fill="#050505" />
+  <path d="M143 239.5C194.49 295.98 241.52 333.83 294.66 353.62C319.73 362.95 346.12 367.19 371.63 365.85L342.62 402.75C319.28 403.95 295.33 399.78 272.02 391.11C211.45 368.56 159.08 324.55 114.88 264.72L143 239.5Z" fill="#050505" />
 </svg>
