@@ -1,4 +1,4 @@
-import type { Collection } from "mongodb"
+import type { Collection, OptionalUnlessRequiredId } from "mongodb"
 import type {
   AetherScanDatabase,
   Agent,
@@ -210,7 +210,7 @@ function serializeEntity<T extends { id: string }>(entity: T): StoredEntity<T> {
 
 function stripStoredEntity<T extends { id: string }>(entity: StoredEntity<T>): T {
   const { _id: _ignored, ...rest } = entity
-  return rest as T
+  return rest as unknown as T
 }
 
 async function replaceEntityCollection<K extends EntityCollectionName>(name: K, items: EntityMap[K][]) {
@@ -218,13 +218,14 @@ async function replaceEntityCollection<K extends EntityCollectionName>(name: K, 
   await collection.deleteMany({})
 
   if (items.length > 0) {
-    await collection.insertMany(items.map((item) => serializeEntity(item)))
+    const documents = items.map((item) => serializeEntity(item)) as OptionalUnlessRequiredId<StoredEntity<EntityMap[K]>>[]
+    await collection.insertMany(documents)
   }
 }
 
 async function readEntityCollection<K extends EntityCollectionName>(name: K): Promise<EntityMap[K][]> {
   const collection = await getEntityCollection(name)
-  const documents = await collection.find({}).toArray()
+  const documents = await collection.find({}).toArray() as StoredEntity<EntityMap[K]>[]
   return documents.map((document) => stripStoredEntity(document))
 }
 
@@ -233,7 +234,6 @@ async function persistSettings(settings: AetherScanDatabase["settings"]) {
   await collection.replaceOne(
     { _id: SETTINGS_DOCUMENT_ID },
     {
-      _id: SETTINGS_DOCUMENT_ID,
       ...settings,
       updatedAt: nowIso(),
     },
@@ -257,7 +257,6 @@ async function writeMetadata(source: MetadataDocument["source"]) {
   await collection.replaceOne(
     { _id: METADATA_DOCUMENT_ID },
     {
-      _id: METADATA_DOCUMENT_ID,
       schemaVersion: SCHEMA_VERSION,
       migratedAt: nowIso(),
       source,

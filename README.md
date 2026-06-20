@@ -21,12 +21,12 @@ That app contains:
 ```powershell
 cd .\aetherscan-mongodb
 npm install
-npm run dev -- --port 3001
+npm run dev:https
 ```
 
 Open:
 
-- `http://localhost:3001/login`
+- `https://localhost:3001/login`
 
 ## Environment
 

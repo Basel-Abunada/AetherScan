@@ -67,7 +67,7 @@ export default function AgentsPage() {
   )
 
   const agentLaunchCommand = createdAgent?.authToken
-    ? `export AETHERSCAN_SERVER_URL="http://YOUR_SERVER_IP:3001"\nexport AETHERSCAN_AGENT_TOKEN="${createdAgent.authToken}"\nexport AETHERSCAN_ONCE=false\nnode ./scripts/aetherscan-agent.mjs`
+    ? `# One-time setup on Kali/Linux\nsudo apt update && sudo apt install -y nodejs npm nmap\nnpm install\n\n# Use your Windows host IP, or the gateway IP from: ip route | grep default\nexport AETHERSCAN_SERVER_URL="https://<WINDOWS_HOST_OR_GATEWAY_IP>:3001"\nexport AETHERSCAN_AGENT_TOKEN="${createdAgent.authToken}"\nexport AETHERSCAN_ONCE=false\n\n# Local self-signed HTTPS only. Remove this for a trusted certificate.\nexport NODE_TLS_REJECT_UNAUTHORIZED=0\n\nnode ./scripts/aetherscan-agent.mjs`
     : ""
 
   const badgeClassName = (status: Agent["status"]) => {
@@ -159,7 +159,7 @@ export default function AgentsPage() {
                   <div className="rounded-lg border bg-muted/40 p-4 text-sm">
                     <p className="mb-2 font-medium">Agent token</p>
                     <code className="block break-all">{createdAgent.authToken}</code>
-                    <p className="mb-2 mt-3 font-medium">Run command on the agent host</p>
+                    <p className="mb-2 mt-3 font-medium">Run commands on the Kali/Linux agent host</p>
                     <code className="block whitespace-pre-wrap break-all">{agentLaunchCommand}</code>
                   </div>
                 ) : null}

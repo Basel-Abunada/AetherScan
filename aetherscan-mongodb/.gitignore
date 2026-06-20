@@ -11,4 +11,7 @@ node_modules/
 .data/
 *.tsbuildinfo
 .tmp-dev-*.log
+.tmp-*.log
 AetherScan/
+
+certificates/
