@@ -34,12 +34,14 @@ AETHERSCAN_JWT_SECRET=change-me-in-real-deployments
 ```bash
 npm install
 npm run mongo:check
-npm run dev:https
+npm run dev
 npm run build
 npm run lint
 ```
 
-Open `https://localhost:3001/login` after the development server starts.
+Open `http://localhost:3001/login` after the development server starts.
+
+HTTPS is still available for local testing with `npm run dev:https`, but HTTP is the recommended local workflow for the dashboard and Kali agent setup.
 
 ## Kali/Linux agent setup
 
@@ -51,12 +53,9 @@ cd ~/Desktop/AetherScan/aetherscan-mongodb
 npm install
 
 # Use your Windows host IP, or the gateway IP from: ip route | grep default
-export AETHERSCAN_SERVER_URL="https://<WINDOWS_HOST_OR_GATEWAY_IP>:3001"
+export AETHERSCAN_SERVER_URL="http://<WINDOWS_HOST_OR_GATEWAY_IP>:3001"
 export AETHERSCAN_AGENT_TOKEN="<agent-token-from-dashboard>"
 export AETHERSCAN_ONCE=false
-
-# Local self-signed HTTPS only. Remove this when using a trusted certificate.
-export NODE_TLS_REJECT_UNAUTHORIZED=0
 
 node ./scripts/aetherscan-agent.mjs
 ```
@@ -64,7 +63,7 @@ node ./scripts/aetherscan-agent.mjs
 Verify the server is reachable from Kali before starting the agent:
 
 ```bash
-curl -k https://<WINDOWS_HOST_OR_GATEWAY_IP>:3001/api/health
+curl http://<WINDOWS_HOST_OR_GATEWAY_IP>:3001/api/health
 ```
 
 ## Health check
