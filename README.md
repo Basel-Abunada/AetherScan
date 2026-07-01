@@ -21,7 +21,7 @@ That app contains:
 ```powershell
 cd .\aetherscan-mongodb
 npm install
-npm run dev
+npm run dev -- --port 3001
 ```
 
 Open:

@@ -2,14 +2,13 @@ import { createHmac, timingSafeEqual } from "node:crypto"
 import { NextResponse } from "next/server"
 import type { Agent, Session, User, UserRole } from "@/lib/aetherscan/types"
 import { readDatabase } from "@/lib/aetherscan/store"
-import { hashPassword, makeId, nowIso } from "@/lib/aetherscan/utils"
+import { hashPassword, nowIso } from "@/lib/aetherscan/utils"
 
 type JwtPayload = {
   sub: string
   email: string
   role: UserRole
   type: "user"
-  jti: string
   exp: number
   iat: number
 }
@@ -78,7 +77,6 @@ export function issueJwtForUser(user: User, expiresInHours = 12) {
     email: user.email,
     role: user.role,
     type: "user",
-    jti: makeId("jwt"),
     iat: issuedAt,
     exp: issuedAt + expiresInHours * 60 * 60,
   })

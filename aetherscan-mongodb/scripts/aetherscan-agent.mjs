@@ -117,17 +117,8 @@ function parseNmapXml(xml) {
     })
 }
 
-function isSingleHostTarget(target) {
-  const trimmed = String(target || "").trim()
-  return Boolean(trimmed) && !trimmed.includes("/") && !trimmed.includes("-") && !trimmed.includes(",") && !/\s/.test(trimmed)
-}
-
-function buildNmapArgs(scanType, target) {
+function buildNmapArgs(scanType) {
   const args = ["-oX", "-", "-n", "-T4", "--max-retries", "2", "-sV"]
-
-  if (isSingleHostTarget(target)) {
-    args.push("-Pn")
-  }
 
   if (scanType === "quick") {
     args.push("--top-ports", "100", "--version-light", "--host-timeout", "4m")
@@ -143,7 +134,7 @@ function buildNmapArgs(scanType, target) {
 }
 
 function runNmap(target, scanType) {
-  const args = [...buildNmapArgs(scanType, target), target]
+  const args = [...buildNmapArgs(scanType), target]
 
   return new Promise((resolve, reject) => {
     const child = spawn("nmap", args, { windowsHide: true })
