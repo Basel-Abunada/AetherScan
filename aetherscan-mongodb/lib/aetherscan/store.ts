@@ -1,4 +1,4 @@
-import type { Collection } from "mongodb"
+import type { Collection, OptionalUnlessRequiredId } from "mongodb"
 import type {
   AetherScanDatabase,
   Agent,
@@ -23,7 +23,7 @@ const SCHEMA_VERSION = 2
 const legacyEmailSuffix = ["@aetherscan", "de", "mo"].join(".")
 const legacyTargetNames = ["hq", "lab", "branch"].map((segment) => ["de", "mo", segment].join("-"))
 const legacyAgentNames = [["Agent", "HQ", "Main"], ["Agent", "Branch", "01"], ["Agent", "Lab", "Test"]].map((parts) => parts.join("-"))
-const OFFLINE_AFTER_MS = 15_000
+const OFFLINE_AFTER_MS = 60_000
 const OCCUPIED_OFFLINE_AFTER_MS = 20 * 60 * 1000
 
 type SettingsDocument = AetherScanDatabase["settings"] & {
@@ -61,6 +61,13 @@ type EntityCollectionName = keyof EntityMap
 type StoredEntity<T extends { id: string }> = T & { _id: string }
 
 const entityCollections: EntityCollectionName[] = ["users", "sessions", "agents", "schedules", "assets", "findings", "alerts", "scans", "reports"]
+let databaseUpdateQueue: Promise<void> = Promise.resolve()
+
+function enqueueDatabaseUpdate<T>(operation: () => Promise<T>) {
+  const task = databaseUpdateQueue.then(operation, operation)
+  databaseUpdateQueue = task.then(() => undefined, () => undefined)
+  return task
+}
 
 function withDefaults(database: AetherScanDatabase): AetherScanDatabase {
   const defaultSettings = createDefaultSettings()
@@ -210,7 +217,7 @@ function serializeEntity<T extends { id: string }>(entity: T): StoredEntity<T> {
 
 function stripStoredEntity<T extends { id: string }>(entity: StoredEntity<T>): T {
   const { _id: _ignored, ...rest } = entity
-  return rest as T
+  return rest as unknown as T
 }
 
 async function replaceEntityCollection<K extends EntityCollectionName>(name: K, items: EntityMap[K][]) {
@@ -218,14 +225,15 @@ async function replaceEntityCollection<K extends EntityCollectionName>(name: K, 
   await collection.deleteMany({})
 
   if (items.length > 0) {
-    await collection.insertMany(items.map((item) => serializeEntity(item)))
+    const documents = items.map((item) => serializeEntity(item)) as OptionalUnlessRequiredId<StoredEntity<EntityMap[K]>>[]
+    await collection.insertMany(documents)
   }
 }
 
 async function readEntityCollection<K extends EntityCollectionName>(name: K): Promise<EntityMap[K][]> {
   const collection = await getEntityCollection(name)
   const documents = await collection.find({}).toArray()
-  return documents.map((document) => stripStoredEntity(document))
+  return documents.map((document) => stripStoredEntity(document as StoredEntity<EntityMap[K]>))
 }
 
 async function persistSettings(settings: AetherScanDatabase["settings"]) {
@@ -233,7 +241,6 @@ async function persistSettings(settings: AetherScanDatabase["settings"]) {
   await collection.replaceOne(
     { _id: SETTINGS_DOCUMENT_ID },
     {
-      _id: SETTINGS_DOCUMENT_ID,
       ...settings,
       updatedAt: nowIso(),
     },
@@ -257,7 +264,6 @@ async function writeMetadata(source: MetadataDocument["source"]) {
   await collection.replaceOne(
     { _id: METADATA_DOCUMENT_ID },
     {
-      _id: METADATA_DOCUMENT_ID,
       schemaVersion: SCHEMA_VERSION,
       migratedAt: nowIso(),
       source,
@@ -397,20 +403,25 @@ async function applyRuntimeState(database: AetherScanDatabase) {
 
 export async function readDatabase(): Promise<AetherScanDatabase> {
   await migrateLegacyAppStateIfNeeded()
-  const database = await assembleDatabase()
-  return applyRuntimeState(database)
+  return assembleDatabase()
 }
 
 export async function writeDatabase(database: AetherScanDatabase) {
-  await migrateLegacyAppStateIfNeeded()
-  await persistDatabase(database)
+  return enqueueDatabaseUpdate(async () => {
+    await migrateLegacyAppStateIfNeeded()
+    await persistDatabase(database)
+  })
 }
 
 export async function updateDatabase<T>(updater: (database: AetherScanDatabase) => T | Promise<T>) {
-  const database = await readDatabase()
-  const result = await updater(database)
-  await writeDatabase(database)
-  return result
+  return enqueueDatabaseUpdate(async () => {
+    await migrateLegacyAppStateIfNeeded()
+    const database = await assembleDatabase()
+    await applyRuntimeState(database)
+    const result = await updater(database)
+    await persistDatabase(database)
+    return result
+  })
 }
 
 export async function getStorageOverview() {
